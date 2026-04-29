@@ -2,9 +2,11 @@
 Dự án giúp quản lý thông tin sinh viên, điểm số và các lớp học.
 
 ## Chức năng chính
-* Thêm, sửa, xóa sinh viên.
-* Tìm kiếm sinh viên theo MSSV.
-* Tính điểm trung bình và xếp loại.
+Thêm / sửa / xóa sinh viên
+Nhập điểm, tính GPA
+Xếp loại học lực
+Tìm kiếm sinh viên
+Xuất báo cáo
 
 ## Cách chạy dự án
 (Hướng dẫn các bước cài đặt và chạy code tại đây)
