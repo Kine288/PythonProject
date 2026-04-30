@@ -1,5 +1,4 @@
 <?php 
-    include "../ChucNang/dang_nhap.php"
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -7,6 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập | Learning2ne1</title>
+    <link rel="stylesheet" href="../../../assets/css/Background.css">
     <style>
         :root {
             --primary-mint: #00b894;     
@@ -21,9 +21,6 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-grey);
-            background-image: radial-gradient(#e3fbf5 1px, transparent 1px);
-            background-size: 20px 20px;
             color: var(--text-dark);
             height: 100vh;
             display: flex;
