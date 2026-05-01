@@ -1,6 +1,6 @@
 <?php 
 define ('DATABASE_HOST', 'localhost');
-define ('DATABASE_NAME', 'pythonprj');
+define ('DATABASE_NAME', 'project_python');
 define ('DATABASE_USER', 'root');
 define ('DATABASE_PASSWORD', '');
 

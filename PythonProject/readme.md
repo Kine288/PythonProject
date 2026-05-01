@@ -173,10 +173,16 @@ Xuất báo cáo
 # Hướng dẫn làm việc
 
 ## Quy tắc thư mục
--   src: Mã nguồn chính 
--   docs: Tài liệu hướn dẫn, sơ đồ lớp, file phân tích
--   data: chứa các file dl (json, csv, sql...)
--   Tài nguyên tĩnh (CSS/JS) đặt trong `assets`.
+-   assets/css: CSS nền + components (Background.css, components.css)
+-   assets/js: JS dùng chung
+-   assets/img: Hình ảnh
+-   config: Cấu hình PHP/Python (database.php, db_config.py, constants.php)
+-   src/python: Backend Python (core, models, services, api, main.py)
+-   src/views: Giao diện PHP (layouts, auth, admin, giao_vu, giang_vien, sinh_vien, index.php)
+-   api: Endpoint PHP trả JSON (diem.php, gpa.php, sinh_vien.php)
+-   scripts: Script chạy độc lập (seed_data.py)
+-   docs: Tài liệu hướng dẫn, sơ đồ lớp, file phân tích
+-   data: Dữ liệu (json, csv, sql...)
 
 ## Quy trình làm việc với Git
 
