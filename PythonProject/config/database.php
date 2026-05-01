@@ -2,7 +2,7 @@
 define ('DATABASE_HOST', 'localhost');
 define ('DATABASE_NAME', 'project_python');
 define ('DATABASE_USER', 'root');
-define ('DATABASE_PASSWORD', '');
+define ('DATABASE_PASSWORD', '0835072866');
 
 function getDatabaseConnection() {
     $dsn = 'mysql:host=' . DATABASE_HOST . ';dbname=' . DATABASE_NAME . ';charset=utf8mb4';
