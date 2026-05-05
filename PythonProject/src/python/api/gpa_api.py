@@ -3,6 +3,7 @@ from flask import Blueprint, jsonify, request
 from config.db_config import get_database_connection
 from services.canh_bao import xac_dinh_muc_canh_bao
 from services.tinh_gpa import (
+    lay_quy_tac_quy_doi,
     luu_ket_qua_hoc_ky,
     tinh_gpa_hoc_ky,
     tinh_gpa_tich_luy,
@@ -73,7 +74,7 @@ def recalculate_gpa():
             gpa_hk_10, gpa_hk_4, _ = tinh_gpa_hoc_ky(sv_id, hoc_ky_id)
             gpa_tl_10, gpa_tl_4, tong_tin_chi = tinh_gpa_tich_luy(sv_id)
             xep_loai = xep_loai_hoc_luc(gpa_tl_4, sv_id)
-            muc_canh_bao = xac_dinh_muc_canh_bao(sv_id, gpa_tl_4)
+            muc_canh_bao = xac_dinh_muc_canh_bao(sv_id, hoc_ky_id, gpa_tl_4)
 
             luu_ket_qua_hoc_ky(
                 sv_id,
@@ -161,6 +162,92 @@ def list_warnings():
                 (hoc_ky_id,),
             )
             rows = cursor.fetchall()
+            return _ok(rows)
+    finally:
+        conn.close()
+
+
+@gpa_bp.get("/transcript/<sinh_vien_id>")
+def get_student_transcript(sinh_vien_id: str):
+    hoc_ky_id = (request.args.get("hoc_ky_id") or "").strip()
+
+    conn = get_database_connection()
+    if not conn:
+        return _error("Khong ket noi duoc database", 500)
+
+    try:
+        with conn.cursor() as cursor:
+            sql = """
+                SELECT sv.sinh_vien_id, sv.msv, sv.ten_sv,
+                       mh.ma_mon, mh.ten_mon, mh.so_tin_chi,
+                       ds.diem_cc, ds.diem_gk, ds.diem_ck, ds.diem_tong,
+                       hk.hoc_ky_id, hk.ma_hoc_ky, hk.ten_hoc_ky,
+                       lhp.ma_lhp
+                FROM ds_lhp ds
+                JOIN sinh_vien sv ON sv.sinh_vien_id = ds.sinh_vien_id
+                JOIN lop_hoc_phan lhp ON lhp.lhp_id = ds.lhp_id
+                JOIN mon_hoc mh ON mh.mon_hoc_id = lhp.mon_hoc_id
+                JOIN hoc_ky hk ON hk.hoc_ky_id = lhp.hoc_ky_id
+                WHERE ds.sinh_vien_id = %s
+            """
+            params = [sinh_vien_id]
+
+            if hoc_ky_id:
+                sql += " AND hk.hoc_ky_id = %s"
+                params.append(hoc_ky_id)
+
+            sql += " ORDER BY hk.ten_hoc_ky DESC, mh.ma_mon ASC"
+
+            cursor.execute(sql, tuple(params))
+            rows = cursor.fetchall()
+            if not rows:
+                return _error("Khong tim thay bang diem", 404)
+
+            for row in rows:
+                diem_tong = row.get("diem_tong")
+                if diem_tong is None:
+                    row["diem_chu"] = None
+                    row["diem_he_4"] = None
+                    continue
+                quy_tac = lay_quy_tac_quy_doi(float(diem_tong))
+                row["diem_chu"] = quy_tac.get("diem_chu")
+                row["diem_he_4"] = quy_tac.get("diem_he_4")
+
+            return _ok(rows)
+    finally:
+        conn.close()
+
+
+@gpa_bp.get("/summary/lhp/<lhp_id>")
+def get_lhp_summary(lhp_id: str):
+    conn = get_database_connection()
+    if not conn:
+        return _error("Khong ket noi duoc database", 500)
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT ds.ds_lhp_id,
+                       sv.sinh_vien_id, sv.msv, sv.ten_sv,
+                       ds.diem_cc, ds.diem_gk, ds.diem_ck, ds.diem_tong,
+                       lhp.lhp_id, lhp.ma_lhp, hk.hoc_ky_id, hk.ten_hoc_ky,
+                       kq.gpa_tich_luy_he_4, kq.xep_loai, kq.muc_canh_bao
+                FROM ds_lhp ds
+                JOIN sinh_vien sv ON sv.sinh_vien_id = ds.sinh_vien_id
+                JOIN lop_hoc_phan lhp ON lhp.lhp_id = ds.lhp_id
+                JOIN hoc_ky hk ON hk.hoc_ky_id = lhp.hoc_ky_id
+                LEFT JOIN ket_qua_hoc_ky kq
+                  ON kq.sinh_vien_id = sv.sinh_vien_id
+                 AND kq.hoc_ky_id = hk.hoc_ky_id
+                WHERE ds.lhp_id = %s
+                ORDER BY sv.ten_sv ASC
+                """,
+                (lhp_id,),
+            )
+            rows = cursor.fetchall()
+            if not rows:
+                return _error("Khong tim thay du lieu tong hop LHP", 404)
             return _ok(rows)
     finally:
         conn.close()

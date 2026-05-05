@@ -1,3 +1,20 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$role = $_SESSION['user_role'] ?? 'GUEST';
+$roleLabel = 'Khach';
+if ($role === 'ADMIN') {
+    $roleLabel = 'Quan tri he thong';
+} elseif ($role === 'GIAO_VU') {
+    $roleLabel = 'Giao vu Hoc vien';
+} elseif ($role === 'GIANG_VIEN') {
+    $roleLabel = 'Giang vien bo mon';
+} elseif ($role === 'SINH_VIEN') {
+    $roleLabel = 'Sinh vien';
+}
+?>
 <header class="flex justify-between items-center w-full px-6 py-3 sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm font-['Manrope'] antialiased">
     <div class="flex items-center gap-4 flex-1">
         <div class="relative max-w-md w-full">
@@ -20,7 +37,7 @@
         <div class="flex items-center gap-3 pl-2 cursor-pointer hover:bg-slate-50 p-1 rounded-lg transition-colors">
             <div class="text-right">
                 <p class="text-xs font-bold text-slate-900">EduAdmin Pro</p>
-                <p class="text-[10px] text-slate-500 font-medium">Giao vu Hoc vien</p>
+                <p class="text-[10px] text-slate-500 font-medium"><?php echo htmlspecialchars($roleLabel); ?></p>
             </div>
             <img alt="Anh dai dien quan tri vien" class="w-8 h-8 rounded-full border-2 border-primary/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkI0FMFJD7jEW3NFZGA_aUR_c7r9dFOTaiEmZf-2Sn0MptMZhaYE5Aewsa8bUgK9FbnKkQIXop4EYyReqGgv5-eVJORi0IMUH5d_WW6NWFbzbKTze4qmk2dip8k9OS-jlxO400SKDKUvgC-hfR3TvZ21jy6NZBYqZAklr9Nht1MTliCRFV1Sfb7uoB-wAqXgrH4DCgIts8QG_oI3vE0YPMuWSPCaR2n23DlNLCDuWM9s3mPFoTY21caksZZvByfeiG1uCGIOjrm3s">
         </div>

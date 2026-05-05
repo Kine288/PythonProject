@@ -127,10 +127,10 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'ADMIN') {
 					<h1 class="font-display-lg text-display-lg text-on-background mb-2">Quan ly Tai khoan</h1>
 					<p class="text-body-md text-on-surface-variant max-w-2xl">Quan tri danh sach tai khoan he thong, vai tro va tinh trang kich hoat. Ho tro tao moi, khoa/mo khoa va reset mat khau.</p>
 				</div>
-				<button class="flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-lg font-title-lg hover:shadow-lg transition-all active:scale-[0.98]" type="button">
+				<a class="flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-lg font-title-lg hover:shadow-lg transition-all active:scale-[0.98]" href="them_sinh_vien.php">
 					<span class="material-symbols-outlined" data-icon="person_add">person_add</span>
-					<span>Them tai khoan moi</span>
-				</button>
+					<span>Them tai khoan sinh vien</span>
+				</a>
 			</div>
 
 			<div class="grid grid-cols-1 md:grid-cols-12 gap-sm mb-lg bg-white p-sm rounded-xl shadow-sm border border-outline-variant/30">

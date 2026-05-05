@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../layouts/header.php';
 require_once __DIR__ . '/../../../config/database.php';
+require_once __DIR__ . '/../../../config/constants.php';
 
 $giao_vu_id = $_SESSION['user_id'] ?? '';
 $pdo = getDatabaseConnection();
@@ -57,10 +58,12 @@ if ($pdo) {
 </div>
 
 <script>
+const PY_API = '<?php echo rtrim(PYTHON_API_URL, '/'); ?>';
+
 document.querySelectorAll('.btn-duyet').forEach(btn => {
   btn.addEventListener('click', function () {
     if (!confirm('Duyet diem LHP nay?')) return;
-    fetch('../../../api/diem.php?action=duyet', {
+    fetch(`${PY_API}/diem/duyet`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

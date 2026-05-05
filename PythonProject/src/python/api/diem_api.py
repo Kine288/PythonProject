@@ -47,7 +47,7 @@ def _parse_score(value, field_name):
     return parsed
 
 
-def _cap_nhat_diem(data):
+def _cap_nhat_diem(data, loai_thay_doi="NHAP_DIEM"):
     conn = get_database_connection()
     if not conn:
         raise ConnectionError("Khong ket noi duoc database")
@@ -97,7 +97,7 @@ def _cap_nhat_diem(data):
             cursor,
             data["ds_lhp_id"],
             nguoi_thay_doi_id,
-            "NHAP_DIEM",
+            loai_thay_doi,
             gia_tri_cu,
             gia_tri_moi,
         )
@@ -116,7 +116,19 @@ def _cap_nhat_diem(data):
 def luu_nhap_diem():
     data = request.get_json() or {}
     try:
-        result = _cap_nhat_diem(data)
+        result = _cap_nhat_diem(data, "LUU_NHAP")
+        return jsonify(result)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@diem_bp.route("/diem/nhap", methods=["POST"])
+def nhap_diem():
+    data = request.get_json() or {}
+    try:
+        result = _cap_nhat_diem(data, "NHAP_DIEM")
         return jsonify(result)
     except ValueError as e:
         return jsonify({"success": False, "error": str(e)}), 400

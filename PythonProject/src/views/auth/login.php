@@ -64,13 +64,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             header('Location: ../admin/quan_ly_tai_khoan.php');
                             exit;
                         case 'GIAO_VU':
-                            header('Location: ../giao_vu/dashboard.php');
+                            header('Location: ../giao_vu/sinh_vien/danh_sach.php');
                             exit;
                         case 'GIANG_VIEN':
                             header('Location: ../giang_vien/lop_hoc_phan.php');
                             exit;
                         case 'SINH_VIEN':
-                            header('Location: ../sinh_vien/dashboard.php');
+                            header('Location: ../sinh_vien/bang_diem.php');
                             exit;
                         default:
                             $error_message = 'Vai tro khong hop le.';
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (isset($_POST['btn_dang_nhap_khach'])) {
         $_SESSION['user_role'] = 'GUEST';
-        header('Location: ../sinh_vien/dashboard.php');
+        header('Location: ../sinh_vien/bang_diem.php');
         exit;
     }
 }

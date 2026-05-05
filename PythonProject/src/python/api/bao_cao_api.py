@@ -1,8 +1,104 @@
-from config.db_config import get_database_connection
+from flask import Blueprint, jsonify, request, send_file
 
-conn = get_database_connection()
-if conn:
-    with conn.cursor() as cursor:
-        cursor.execute("SELECT * FROM sinh_vien")
-        rows = cursor.fetchall()  # trả về list of dict nhờ DictCursor
-    conn.close()
+from services.xuat_bao_cao import (
+    lay_ds_canh_bao,
+    thong_ke_xep_loai,
+    xuat_excel_canh_bao,
+    xuat_pdf_bang_diem_ca_nhan,
+)
+
+bao_cao_bp = Blueprint("bao_cao_api", __name__, url_prefix="/api/bao-cao")
+
+
+def _error(message: str, status: int = 400):
+    return jsonify({"success": False, "message": message}), status
+
+
+def _ok(data=None, message: str = ""):
+    return jsonify({"success": True, "message": message, "data": data})
+
+
+@bao_cao_bp.get("/canh-bao")
+def api_ds_canh_bao():
+    hoc_ky_id = (request.args.get("hoc_ky_id") or "").strip()
+    muc = (request.args.get("muc_canh_bao") or "").strip()
+
+    if not hoc_ky_id:
+        return _error("Thieu hoc_ky_id")
+
+    muc_value = None
+    if muc:
+        try:
+            muc_value = int(muc)
+        except ValueError:
+            return _error("muc_canh_bao khong hop le")
+
+    try:
+        data = lay_ds_canh_bao(hoc_ky_id, muc_value)
+        return _ok(data)
+    except Exception as exc:
+        return _error(f"Khong the tai danh sach canh bao: {exc}", 500)
+
+
+@bao_cao_bp.get("/thong-ke-xep-loai")
+def api_thong_ke_xep_loai():
+    hoc_ky_id = (request.args.get("hoc_ky_id") or "").strip()
+    if not hoc_ky_id:
+        return _error("Thieu hoc_ky_id")
+
+    try:
+        data = thong_ke_xep_loai(hoc_ky_id)
+        return _ok(data)
+    except Exception as exc:
+        return _error(f"Khong the thong ke xep loai: {exc}", 500)
+
+
+@bao_cao_bp.post("/export/canh-bao-excel")
+def api_export_canh_bao_excel():
+    payload = request.get_json(silent=True) or {}
+    hoc_ky_id = (payload.get("hoc_ky_id") or "").strip()
+    muc = payload.get("muc_canh_bao")
+
+    if not hoc_ky_id:
+        return _error("Thieu hoc_ky_id")
+
+    if muc is not None and muc != "":
+        try:
+            muc = int(muc)
+        except (TypeError, ValueError):
+            return _error("muc_canh_bao khong hop le")
+    else:
+        muc = None
+
+    try:
+        file_path = xuat_excel_canh_bao(hoc_ky_id, muc)
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=f"canh_bao_{hoc_ky_id}.xlsx",
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    except Exception as exc:
+        return _error(f"Khong the xuat Excel: {exc}", 500)
+
+
+@bao_cao_bp.post("/export/bang-diem-pdf")
+def api_export_bang_diem_pdf():
+    payload = request.get_json(silent=True) or {}
+    sinh_vien_id = (payload.get("sinh_vien_id") or "").strip()
+
+    if not sinh_vien_id:
+        return _error("Thieu sinh_vien_id")
+
+    try:
+        file_path = xuat_pdf_bang_diem_ca_nhan(sinh_vien_id)
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=f"bang_diem_{sinh_vien_id}.pdf",
+            mimetype="application/pdf",
+        )
+    except ValueError as exc:
+        return _error(str(exc), 404)
+    except Exception as exc:
+        return _error(f"Khong the xuat PDF: {exc}", 500)

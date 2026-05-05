@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/../../../config/database.php';
+require_once __DIR__ . '/../../../config/constants.php';
 
 $lhp_id = $_GET['lhp_id'] ?? '';
 $tai_khoan_id = $_SESSION['user_id'] ?? '';
@@ -35,7 +36,7 @@ if (!$pdo) {
       if (!$lhp) {
         $page_error = 'Lop hoc phan khong ton tai hoac khong thuoc giang vien hien tai.';
       } else {
-        $stmt = $pdo->prepare("\
+           $stmt = $pdo->prepare("
           SELECT sv.sinh_vien_id, sv.msv, sv.ten_sv,
                d.ds_lhp_id, d.diem_cc, d.diem_gk, d.diem_ck
           FROM ds_lhp d
@@ -263,6 +264,8 @@ if (!$pdo) {
   </main>
 
 <script>
+const PY_API = '<?php echo rtrim(PYTHON_API_URL, '/'); ?>';
+
 document.querySelectorAll('.btn-luu').forEach(btn => {
   btn.addEventListener('click', function () {
     const row = this.closest('tr');
@@ -275,7 +278,7 @@ document.querySelectorAll('.btn-luu').forEach(btn => {
       diem_ck: parseFloat(row.querySelector('.diem-ck').value || 0),
     };
 
-    fetch('../../../api/diem.php?action=luu_nhap', {
+    fetch(`${PY_API}/diem/luu-nhap`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -293,7 +296,7 @@ document.querySelectorAll('.btn-luu').forEach(btn => {
 
 document.getElementById('btn-gui-duyet').addEventListener('click', function () {
   if (!confirm('Gui duyet toan bo LHP nay?')) return;
-  fetch('../../../api/diem.php?action=gui_duyet', {
+  fetch(`${PY_API}/diem/gui-duyet`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ lhp_id: this.dataset.lhp })
