@@ -15,6 +15,11 @@ class LopHocPhan:
 	trang_thai_giao_vu: int = 1
 	trang_thai_giang_vien: int = 0
 
+	def validate_ty_le(self) -> None:
+		tong = self.ty_le_cc + self.ty_le_gk + self.ty_le_ck
+		if tong != 100:
+			raise ValueError(f"Tong trong so phai = 100%, hien tai = {tong}%")
+
 	def to_dict(self) -> Dict[str, Any]:
 		return asdict(self)
 

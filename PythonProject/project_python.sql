@@ -173,7 +173,7 @@ CREATE TABLE `lop_hoc_phan` (
   `ty_le_ck` tinyint NOT NULL DEFAULT '60',
   `trang_thai_giao_vu` tinyint DEFAULT '1',
   `trang_thai_giang_vien` tinyint DEFAULT '0'
-) ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
