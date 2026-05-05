@@ -8,6 +8,7 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'ADMIN') {
 ?>
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -94,13 +95,35 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'ADMIN') {
 						"body-md": ["Inter"]
 					},
 					fontSize: {
-						"label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
-						"display-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
-						"title-lg": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
-						"display-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-						"data-table": ["14px", {"lineHeight": "20px", "fontWeight": "450"}],
-						"body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
-						"body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+						"label-md": ["12px", {
+							"lineHeight": "16px",
+							"letterSpacing": "0.02em",
+							"fontWeight": "500"
+						}],
+						"display-lg": ["32px", {
+							"lineHeight": "40px",
+							"fontWeight": "700"
+						}],
+						"title-lg": ["18px", {
+							"lineHeight": "28px",
+							"fontWeight": "600"
+						}],
+						"display-md": ["24px", {
+							"lineHeight": "32px",
+							"fontWeight": "600"
+						}],
+						"data-table": ["14px", {
+							"lineHeight": "20px",
+							"fontWeight": "450"
+						}],
+						"body-sm": ["13px", {
+							"lineHeight": "18px",
+							"fontWeight": "400"
+						}],
+						"body-md": ["14px", {
+							"lineHeight": "20px",
+							"fontWeight": "400"
+						}]
 					}
 				}
 			}
@@ -111,11 +134,13 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'ADMIN') {
 			font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 			vertical-align: middle;
 		}
+
 		body {
 			background-color: #f1fbff;
 		}
 	</style>
 </head>
+
 <body class="font-body-md text-on-background">
 	<?php include __DIR__ . '/../layouts/sidebar.php'; ?>
 	<main class="ml-64 min-h-screen">
@@ -127,10 +152,10 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'ADMIN') {
 					<h1 class="font-display-lg text-display-lg text-on-background mb-2">Quan ly Tai khoan</h1>
 					<p class="text-body-md text-on-surface-variant max-w-2xl">Quan tri danh sach tai khoan he thong, vai tro va tinh trang kich hoat. Ho tro tao moi, khoa/mo khoa va reset mat khau.</p>
 				</div>
-				<button class="flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-lg font-title-lg hover:shadow-lg transition-all active:scale-[0.98]" type="button">
+				<a class="flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-lg font-title-lg hover:shadow-lg transition-all active:scale-[0.98]" href="them_sinh_vien.php">
 					<span class="material-symbols-outlined" data-icon="person_add">person_add</span>
-					<span>Them tai khoan moi</span>
-				</button>
+					<span>Them tai khoan sinh vien</span>
+				</a>
 			</div>
 
 			<div class="grid grid-cols-1 md:grid-cols-12 gap-sm mb-lg bg-white p-sm rounded-xl shadow-sm border border-outline-variant/30">
@@ -301,4 +326,5 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'ADMIN') {
 		<?php include __DIR__ . '/../layouts/footer.php'; ?>
 	</main>
 </body>
+
 </html>

@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, make_response, request
 
 # Ensure project root and current dir are available for imports.
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -15,6 +15,7 @@ if str(CURRENT_DIR) not in sys.path:
 
 from api.diem_api import diem_bp  # noqa: E402
 from api.gpa_api import gpa_bp  # noqa: E402
+from api.bao_cao_api import bao_cao_bp  # noqa: E402
 from api.sinh_vien_api import sinh_vien_bp  # noqa: E402
 
 
@@ -23,7 +24,20 @@ def create_app() -> Flask:
 
 	app.register_blueprint(diem_bp)
 	app.register_blueprint(gpa_bp)
+	app.register_blueprint(bao_cao_bp)
 	app.register_blueprint(sinh_vien_bp)
+
+	@app.after_request
+	def add_cors_headers(response):
+		response.headers["Access-Control-Allow-Origin"] = "*"
+		response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+		response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+		return response
+
+	@app.before_request
+	def handle_preflight_request():
+		if request.method == "OPTIONS":
+			return make_response("", 204)
 
 	@app.get("/health")
 	def health_check():

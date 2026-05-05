@@ -5,6 +5,7 @@ $action = $_GET['action'] ?? '';
 $data = json_decode(file_get_contents('php://input'), true);
 
 $endpoint_map = [
+	'nhap_diem' => '/diem/nhap',
 	'luu_nhap' => '/diem/luu-nhap',
 	'gui_duyet' => '/diem/gui-duyet',
 	'duyet' => '/diem/duyet',
