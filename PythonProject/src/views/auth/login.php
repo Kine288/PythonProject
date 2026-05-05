@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             header('Location: ../giao_vu/dashboard.php');
                             exit;
                         case 'GIANG_VIEN':
-                            header('Location: ../giang_vien/dashboard.php');
+                            header('Location: ../giang_vien/lop_hoc_phan.php');
                             exit;
                         case 'SINH_VIEN':
                             header('Location: ../sinh_vien/dashboard.php');
