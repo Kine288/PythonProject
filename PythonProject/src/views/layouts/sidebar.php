@@ -1,83 +1,75 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+$role = $_SESSION['user_role'] ?? '';
+$script_name = $_SERVER['SCRIPT_NAME'] ?? '';
+$views_base = preg_replace('#/src/views/.*$#', '/src/views', $script_name);
+if (!$views_base) {
+	$views_base = '/src/views';
 }
 
-$userRole = $_SESSION['user_role'] ?? 'GUEST';
-
-$menuByRole = [
-    'ADMIN' => [
-        ['label' => 'Quan ly tai khoan', 'icon' => 'manage_accounts', 'href' => '/PythonProject/PythonProject/src/views/admin/quan_ly_tai_khoan.php'],
-        ['label' => 'Them sinh vien', 'icon' => 'person_add', 'href' => '/PythonProject/PythonProject/src/views/admin/them_sinh_vien.php'],
-        ['label' => 'Hoc vu tong quan', 'icon' => 'school', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/sinh_vien/danh_sach.php'],
-    ],
-    'GIAO_VU' => [
-        ['label' => 'Quan ly Sinh vien', 'icon' => 'group', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/sinh_vien/danh_sach.php'],
-        ['label' => 'Lop hoc phan', 'icon' => 'class', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/duyet_diem.php'],
-        ['label' => 'Tong ket hoc vu', 'icon' => 'analytics', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/tong_ket_hoc_vu.php'],
-        ['label' => 'Tong hop LHP', 'icon' => 'table_chart', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/ket_qua_tong_hop.php'],
-        ['label' => 'Bao cao canh bao', 'icon' => 'warning', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/bao_cao/canh_bao.php'],
-    ],
-    'GIANG_VIEN' => [
-        ['label' => 'Lop hoc phan', 'icon' => 'class', 'href' => '/PythonProject/PythonProject/src/views/giang_vien/lop_hoc_phan.php'],
-    ],
-    'SINH_VIEN' => [
-        ['label' => 'Bang diem ca nhan', 'icon' => 'menu_book', 'href' => '/PythonProject/PythonProject/src/views/sinh_vien/bang_diem.php'],
-    ],
+$menus_by_role = [
+	'ADMIN' => [
+		['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => $views_base . '/admin/dashboard.php'],
+		['label' => 'Quan ly tai khoan', 'icon' => 'manage_accounts', 'href' => $views_base . '/admin/quan_ly_tai_khoan.php'],
+		['label' => 'Reset mat khau', 'icon' => 'lock_reset', 'href' => $views_base . '/admin/reset_mat_khau.php'],
+	],
+	'GIAO_VU' => [
+		['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => $views_base . '/giao_vu/dashboard.php'],
+		['label' => 'Sinh vien', 'icon' => 'group', 'href' => $views_base . '/giao_vu/sinh_vien/danh_sach.php'],
+		['label' => 'Giang vien', 'icon' => 'school', 'href' => '#'],
+		['label' => 'Danh muc', 'icon' => 'inventory_2', 'href' => '#'],
+		['label' => 'Lop hoc phan', 'icon' => 'class', 'href' => '#'],
+		['label' => 'Phan cong', 'icon' => 'assignment_ind', 'href' => '#'],
+		['label' => 'Duyet diem', 'icon' => 'fact_check', 'href' => $views_base . '/giao_vu/duyet_diem.php'],
+		['label' => 'Bao cao', 'icon' => 'analytics', 'href' => '#'],
+	],
+	'GIANG_VIEN' => [
+		['label' => 'Lop hoc phan', 'icon' => 'class', 'href' => $views_base . '/giang_vien/lop_hoc_phan.php'],
+		['label' => 'Nhap diem', 'icon' => 'edit_square', 'href' => $views_base . '/giang_vien/nhap_diem.php'],
+		['label' => 'Yeu cau sua diem', 'icon' => 'history_edu', 'href' => '#'],
+		['label' => 'Ho so ca nhan', 'icon' => 'person', 'href' => '#'],
+	],
+	'SINH_VIEN' => [
+		['label' => 'Bang diem ca nhan', 'icon' => 'grading', 'href' => '#'],
+		['label' => 'Xep loai hoc luc', 'icon' => 'emoji_events', 'href' => '#'],
+		['label' => 'Xuat phieu diem', 'icon' => 'description', 'href' => '#'],
+		['label' => 'Ho so ca nhan', 'icon' => 'person', 'href' => '#'],
+	],
 ];
 
-$menuItems = $menuByRole[$userRole] ?? [];
-$currentPath = $_SERVER['REQUEST_URI'] ?? '';
-
-function sidebarRoleLabel(string $role): string
-{
-    if ($role === 'ADMIN') {
-        return 'Quan tri he thong';
-    }
-    if ($role === 'GIAO_VU') {
-        return 'Nghiep vu giao vu';
-    }
-    if ($role === 'GIANG_VIEN') {
-        return 'Cong tac giang day';
-    }
-    if ($role === 'SINH_VIEN') {
-        return 'Thong tin hoc tap';
-    }
-    return 'Truy cap he thong';
-}
+$menu_items = $menus_by_role[$role] ?? [];
+$logout_href = $views_base . '/auth/logout.php';
 ?>
+
 <aside class="h-screen w-64 border-r fixed left-0 top-0 bg-white border-slate-100 shadow-[4px_0_24px_rgba(0,184,148,0.04)] z-50 flex flex-col h-full p-4 space-y-2">
-    <div class="mb-8 px-2 flex items-center gap-3">
-        <div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center">
-            <span class="material-symbols-outlined text-white" data-icon="school">school</span>
-        </div>
-        <div>
-            <h2 class="text-lg font-bold text-slate-900 font-display-md leading-tight">Hoc vien Giao duc</h2>
-            <p class="text-[11px] text-slate-500 uppercase tracking-wider font-semibold"><?php echo htmlspecialchars(sidebarRoleLabel($userRole)); ?></p>
-        </div>
-    </div>
+	<div class="mb-8 px-2 flex items-center gap-3">
+		<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center">
+			<span class="material-symbols-outlined text-white" data-icon="school">school</span>
+		</div>
+		<div>
+			<h2 class="text-lg font-bold text-slate-900 font-display-md leading-tight">Hoc vien Giao duc</h2>
+			<p class="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">Quan ly Nghiep vu</p>
+		</div>
+	</div>
 
-    <nav class="flex-1 space-y-1">
-        <?php if (empty($menuItems)): ?>
-            <div class="px-3 py-2 text-sm text-slate-400">Khong co menu phu hop vai tro hien tai.</div>
-        <?php endif; ?>
-        <?php foreach ($menuItems as $item): ?>
-            <?php $isActive = strpos($currentPath, $item['href']) !== false; ?>
-            <a class="flex items-center gap-3 px-3 py-2 <?php echo $isActive ? 'bg-teal-50 text-teal-600 font-semibold' : 'text-slate-600 hover:text-teal-500 hover:bg-slate-50'; ?> rounded-lg transition-all duration-200 scale-100 active:scale-95 origin-left font-['Manrope'] text-sm" href="<?php echo htmlspecialchars($item['href']); ?>">
-                <span class="material-symbols-outlined" data-icon="<?php echo htmlspecialchars($item['icon']); ?>"><?php echo htmlspecialchars($item['icon']); ?></span>
-                <span><?php echo htmlspecialchars($item['label']); ?></span>
-            </a>
-        <?php endforeach; ?>
-    </nav>
+	<nav class="flex-1 space-y-1">
+		<?php foreach ($menu_items as $item): ?>
+			<?php
+			$is_active = $item['href'] !== '#' && $item['href'] === $script_name;
+			$link_classes = $is_active
+				? "flex items-center gap-3 px-3 py-2 bg-teal-50 text-teal-600 font-semibold rounded-lg scale-100 active:scale-95 origin-left font-['Manrope'] text-sm"
+				: "flex items-center gap-3 px-3 py-2 text-slate-600 hover:text-teal-500 hover:bg-slate-50 rounded-lg transition-all duration-200 scale-100 active:scale-95 origin-left font-['Manrope'] text-sm";
+			?>
+			<a class="<?php echo $link_classes; ?>" href="<?php echo htmlspecialchars($item['href']); ?>">
+				<span class="material-symbols-outlined" data-icon="<?php echo htmlspecialchars($item['icon']); ?>"><?php echo htmlspecialchars($item['icon']); ?></span>
+				<span><?php echo htmlspecialchars($item['label']); ?></span>
+			</a>
+		<?php endforeach; ?>
+	</nav>
 
-    <div class="pt-4 border-t border-slate-100 space-y-1">
-        <button class="w-full text-left flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-all font-['Manrope'] text-sm" type="button">
-            <span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
-            <span>Huong dan</span>
-        </button>
-        <a class="w-full text-left flex items-center gap-3 px-3 py-2 text-error hover:bg-error-container/20 rounded-lg transition-all font-['Manrope'] text-sm" href="/PythonProject/PythonProject/src/views/auth/login.php">
-            <span class="material-symbols-outlined" data-icon="logout">logout</span>
-            <span>Dang xuat</span>
-        </a>
-    </div>
+	<div class="pt-4 border-t border-slate-100 space-y-1">
+		<a class="w-full text-left flex items-center gap-3 px-3 py-2 text-error hover:bg-error-container/20 rounded-lg transition-all font-['Manrope'] text-sm" href="<?php echo htmlspecialchars($logout_href); ?>">
+			<span class="material-symbols-outlined" data-icon="logout">logout</span>
+			<span>Dang xuat</span>
+		</a>
+	</div>
 </aside>

@@ -163,6 +163,11 @@ if (!$pdo) {
     <?php include __DIR__ . '/../layouts/header.php'; ?>
 
     <div class="p-margin">
+      <nav class="flex items-center gap-2 text-xs text-slate-500 mb-3">
+        <a class="hover:text-primary" href="lop_hoc_phan.php">Trang chu</a>
+        <span>/</span>
+        <span class="text-slate-700 font-semibold">Lop hoc phan</span>
+      </nav>
       <div class="flex justify-between items-end mb-lg">
         <div>
           <h1 class="font-display-lg text-display-lg text-on-background mb-2">Lop hoc phan</h1>

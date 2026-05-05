@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from src.python.core.database import db_cursor, db_transaction
+from core.database import db_cursor, db_transaction
 
 
 def _new_id() -> str:
@@ -72,6 +72,79 @@ def get_student(sinh_vien_id: str) -> Optional[Dict[str, Any]]:
             (sinh_vien_id,),
         )
         return cursor.fetchone()
+
+
+def get_student_by_account(tai_khoan_id: str) -> Optional[Dict[str, Any]]:
+    with db_cursor() as (_, cursor):
+        cursor.execute(
+            """
+            SELECT sv.sinh_vien_id, sv.tai_khoan_id, sv.msv, sv.ten_sv, sv.gioi_tinh,
+                   sv.ngay_sinh, sv.lop_id, tk.email
+            FROM sinh_vien sv
+            JOIN tai_khoan tk ON tk.tai_khoan_id = sv.tai_khoan_id
+            WHERE sv.tai_khoan_id = %s
+            LIMIT 1
+            """,
+            (tai_khoan_id,),
+        )
+        return cursor.fetchone()
+
+
+def create_student_for_account(tai_khoan_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    required = ["msv", "ten_sv", "lop_id"]
+    for field in required:
+        if not payload.get(field):
+            raise ValueError(f"Thieu truong bat buoc: {field}")
+
+    with db_transaction() as (_, cursor):
+        cursor.execute(
+            "SELECT tai_khoan_id, email, vai_tro_id FROM tai_khoan WHERE tai_khoan_id = %s LIMIT 1",
+            (tai_khoan_id,),
+        )
+        account = cursor.fetchone()
+        if not account:
+            raise ValueError("Khong tim thay tai khoan")
+
+        cursor.execute(
+            "SELECT sinh_vien_id FROM sinh_vien WHERE tai_khoan_id = %s LIMIT 1",
+            (tai_khoan_id,),
+        )
+        existing = cursor.fetchone()
+        if existing:
+            raise ValueError("Tai khoan da co thong tin sinh vien")
+
+        role_id = _get_or_create_role(cursor, "SINH_VIEN")
+        if account["vai_tro_id"] != role_id:
+            cursor.execute(
+                "UPDATE tai_khoan SET vai_tro_id = %s WHERE tai_khoan_id = %s",
+                (role_id, tai_khoan_id),
+            )
+
+        if payload.get("email"):
+            cursor.execute(
+                "UPDATE tai_khoan SET email = %s WHERE tai_khoan_id = %s",
+                (payload["email"], tai_khoan_id),
+            )
+
+        sinh_vien_id = _new_id()
+        cursor.execute(
+            """
+            INSERT INTO sinh_vien (
+                sinh_vien_id, tai_khoan_id, msv, ten_sv, gioi_tinh, ngay_sinh, lop_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                sinh_vien_id,
+                tai_khoan_id,
+                payload["msv"],
+                payload["ten_sv"],
+                _normalize_gender(payload.get("gioi_tinh")),
+                payload.get("ngay_sinh"),
+                payload["lop_id"],
+            ),
+        )
+
+    return get_student(sinh_vien_id) or {}
 
 
 def create_student(payload: Dict[str, Any]) -> Dict[str, Any]:

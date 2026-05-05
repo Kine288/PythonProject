@@ -2,428 +2,297 @@
 session_start();
 require_once __DIR__ . '/../../../../api/sinh_vien.php';
 
-$currentRole = $_SESSION['user_role'] ?? '';
-$isAdmin = $currentRole === 'ADMIN';
+$role = $_SESSION['user_role'] ?? '';
+$isAdmin = $role === 'ADMIN';
 
 $notice = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['form_action'] ?? '';
-    $payload = $_POST;
+	$action = $_POST['form_action'] ?? '';
+	$payload = $_POST;
 
-    if ($action === 'delete_student' && !$isAdmin) {
-        $response = ['success' => false, 'message' => 'Chi Admin duoc xoa tai khoan sinh vien'];
-    } elseif ($action === 'delete_student') {
-        $response = sinhVienProxyRequest('DELETE', '/students/' . ($payload['sinh_vien_id'] ?? ''));
-    } elseif ($action === 'transfer_class') {
-        $response = sinhVienProxyRequest(
-            'POST',
-            '/students/' . ($payload['sinh_vien_id'] ?? '') . '/transfer-class',
-            ['lop_id_moi' => $payload['lop_id_moi'] ?? null]
-        );
-    } elseif ($action === 'create_lhp') {
-        $response = sinhVienProxyRequest('POST', '/lhp', [
-            'ma_lhp' => $payload['ma_lhp'] ?? '',
-            'giang_vien_id' => $payload['giang_vien_id'] ?? '',
-            'mon_hoc_id' => $payload['mon_hoc_id'] ?? '',
-            'hoc_ky_id' => $payload['hoc_ky_id'] ?? '',
-            'ty_le_cc' => $payload['ty_le_cc'] ?? 10,
-            'ty_le_gk' => $payload['ty_le_gk'] ?? 30,
-            'ty_le_ck' => $payload['ty_le_ck'] ?? 60,
-        ]);
-    } elseif ($action === 'assign_lecturer') {
-        $response = sinhVienProxyRequest(
-            'PUT',
-            '/lhp/' . ($payload['lhp_id'] ?? '') . '/assign-lecturer',
-            ['giang_vien_id' => $payload['giang_vien_id'] ?? '']
-        );
-    } elseif ($action === 'add_student_to_lhp') {
-        $response = sinhVienProxyRequest(
-            'POST',
-            '/lhp/' . ($payload['lhp_id'] ?? '') . '/students',
-            ['sinh_vien_id' => $payload['sinh_vien_id'] ?? '']
-        );
-    } elseif ($action === 'remove_student_from_lhp') {
-        $response = sinhVienProxyRequest(
-            'DELETE',
-            '/lhp/' . ($payload['lhp_id'] ?? '') . '/students/' . ($payload['sinh_vien_id'] ?? '')
-        );
-    } else {
-        $response = ['success' => false, 'message' => 'Thao tac khong hop le'];
-    }
+	if ($action === 'delete_student' && !$isAdmin) {
+		$response = ['success' => false, 'message' => 'Chi Admin duoc xoa tai khoan sinh vien'];
+	} elseif ($action === 'delete_student') {
+		$response = sinhVienProxyRequest('DELETE', '/students/' . ($payload['sinh_vien_id'] ?? ''));
+	} elseif ($action === 'transfer_class') {
+		$response = sinhVienProxyRequest('PUT', '/chuyen-lop', [
+			'sinh_vien_id' => $payload['sinh_vien_id'] ?? '',
+			'lop_id_moi' => $payload['lop_id_moi'] ?? null,
+		]);
+	} else {
+		$response = ['success' => false, 'message' => 'Thao tac khong hop le'];
+	}
 
-    if (!empty($response['success'])) {
-        $notice = $response['message'] ?? 'Thuc hien thanh cong';
-    } else {
-        $error = $response['message'] ?? 'Co loi xay ra';
-    }
+	if (!empty($response['success'])) {
+		$notice = $response['message'] ?? 'Thuc hien thanh cong';
+	} else {
+		$error = $response['message'] ?? 'Co loi xay ra';
+	}
 }
 
 $keyword = trim($_GET['keyword'] ?? '');
 $lopFilter = trim($_GET['lop_id'] ?? '');
 
-$studentsRes = sinhVienProxyRequest('GET', '/students', null, ['keyword' => $keyword, 'lop_id' => $lopFilter]);
+$studentsRes = sinhVienProxyRequest('GET', '', null, ['keyword' => $keyword, 'lop_id' => $lopFilter]);
 $lopRes = sinhVienProxyRequest('GET', '/catalog/lop');
-$gvRes = sinhVienProxyRequest('GET', '/catalog/giang-vien');
-$monRes = sinhVienProxyRequest('GET', '/catalog/mon-hoc');
-$hocKyRes = sinhVienProxyRequest('GET', '/catalog/hoc-ky');
-$lhpRes = sinhVienProxyRequest('GET', '/lhp');
 
 $students = $studentsRes['data'] ?? [];
 $lops = $lopRes['data'] ?? [];
-$giangViens = $gvRes['data'] ?? [];
-$monHocs = $monRes['data'] ?? [];
-$hocKys = $hocKyRes['data'] ?? [];
-$lhps = $lhpRes['data'] ?? [];
+
+if (!empty($studentsRes) && empty($studentsRes['success'])) {
+	$error = $studentsRes['message'] ?? 'Khong the tai danh sach sinh vien';
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danh sach sinh vien</title>
-    <link rel="stylesheet" href="../../../../assets/css/components.css">
-    <style>
-        body {
-            margin: 0;
-            background: #f4f8fb;
-            font-family: 'Segoe UI', sans-serif;
-            color: #1f2937;
-        }
-
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-
-        .card {
-            background: #fff;
-            border: 1px solid #e5edf5;
-            border-radius: 14px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        .title {
-            margin: 0 0 10px;
-            font-size: 22px;
-        }
-
-        .row {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 12px;
-        }
-
-        .row-3 {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 12px;
-        }
-
-        .actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        label {
-            display: block;
-            font-size: 13px;
-            margin-bottom: 4px;
-            color: #475569;
-        }
-
-        input,
-        select,
-        button {
-            width: 100%;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #d3dde7;
-            box-sizing: border-box;
-        }
-
-        button {
-            background: #0f766e;
-            color: #fff;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        button.secondary {
-            background: #334155;
-        }
-
-        button.danger {
-            background: #be123c;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th,
-        td {
-            text-align: left;
-            padding: 10px;
-            border-bottom: 1px solid #edf2f7;
-            font-size: 14px;
-        }
-
-        .notice {
-            background: #dcfce7;
-            color: #166534;
-            border: 1px solid #86efac;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-        }
-
-        .error {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fca5a5;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-        }
-
-        .inline-form {
-            display: inline-flex;
-            gap: 6px;
-            align-items: center;
-        }
-
-        @media (max-width: 960px) {
-
-            .row,
-            .row-3 {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Danh sach sinh vien | EduAdmin</title>
+	<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+	<script id="tailwind-config">
+		tailwind.config = {
+			darkMode: "class",
+			theme: {
+				extend: {
+					colors: {
+						"outline-variant": "#bbcac3",
+						"on-secondary-fixed": "#161d1f",
+						"surface-container-low": "#eaf5fa",
+						"on-primary": "#ffffff",
+						"surface-container": "#e4f0f4",
+						"on-background": "#131d21",
+						"on-surface": "#131d21",
+						"primary-container": "#00b894",
+						"tertiary-fixed-dim": "#a2c9ff",
+						"primary-fixed": "#6dfad2",
+						"on-tertiary": "#ffffff",
+						"on-tertiary-fixed-variant": "#004881",
+						"secondary-container": "#dae1e3",
+						"surface-variant": "#d9e4e9",
+						"primary": "#006b55",
+						"secondary-fixed-dim": "#c1c8ca",
+						"on-tertiary-fixed": "#001c38",
+						"error-container": "#ffdad6",
+						"primary-fixed-dim": "#4bddb7",
+						"on-error-container": "#93000a",
+						"on-secondary": "#ffffff",
+						"surface": "#f1fbff",
+						"on-tertiary-container": "#003a6a",
+						"surface-tint": "#006b55",
+						"on-secondary-container": "#5d6466",
+						"tertiary": "#0060a9",
+						"surface-container-high": "#dfeaef",
+						"on-surface-variant": "#3c4a44",
+						"secondary": "#586062",
+						"inverse-surface": "#283236",
+						"surface-bright": "#f1fbff",
+						"surface-dim": "#d1dce0",
+						"on-primary-container": "#004233",
+						"surface-container-lowest": "#ffffff",
+						"error": "#ba1a1a",
+						"on-primary-fixed": "#002018",
+						"inverse-primary": "#4bddb7",
+						"tertiary-fixed": "#d3e4ff",
+						"secondary-fixed": "#dde4e6",
+						"on-secondary-fixed-variant": "#41484a",
+						"inverse-on-surface": "#e7f3f7",
+						"outline": "#6c7a74",
+						"tertiary-container": "#55a6ff",
+						"on-error": "#ffffff",
+						"on-primary-fixed-variant": "#005140",
+						"surface-container-highest": "#d9e4e9",
+						"background": "#f1fbff"
+					},
+					borderRadius: {
+						DEFAULT: "0.25rem",
+						lg: "0.5rem",
+						xl: "0.75rem",
+						full: "9999px"
+					},
+					spacing: {
+						gutter: "20px",
+						base: "8px",
+						xs: "4px",
+						md: "24px",
+						sm: "12px",
+						lg: "40px",
+						margin: "32px"
+					},
+					fontFamily: {
+						"label-md": ["Inter"],
+						"display-lg": ["Manrope"],
+						"title-lg": ["Inter"],
+						"display-md": ["Manrope"],
+						"data-table": ["Inter"],
+						"body-sm": ["Inter"],
+						"body-md": ["Inter"]
+					},
+					fontSize: {
+						"label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+						"display-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+						"title-lg": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+						"display-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+						"data-table": ["14px", {"lineHeight": "20px", "fontWeight": "450"}],
+						"body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+						"body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+					}
+				}
+			}
+		}
+	</script>
+	<style>
+		.material-symbols-outlined {
+			font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+			vertical-align: middle;
+		}
+		body {
+			background-color: #f1fbff;
+		}
+	</style>
 </head>
 
-<body>
-    <div class="container">
-        <div class="card">
-            <h1 class="title">Quan ly sinh vien</h1>
-            <?php if ($notice): ?><div class="notice"><?php echo htmlspecialchars($notice); ?></div><?php endif; ?>
-            <?php if ($error): ?><div class="error"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
-            <?php if (!$isAdmin): ?><div class="notice">Luu y: Tao/xoa tai khoan sinh vien thuoc vai tro Admin. Giao vu chi cap nhat nghiep vu hoc vu.</div><?php endif; ?>
+<body class="font-body-md text-on-background">
+	<?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
+	<main class="ml-64 min-h-screen">
+		<?php include __DIR__ . '/../../layouts/header.php'; ?>
 
-            <form method="get" class="row">
-                <div>
-                    <label>Tim theo ten, msv, email</label>
-                    <input type="text" name="keyword" value="<?php echo htmlspecialchars($keyword); ?>">
-                </div>
-                <div>
-                    <label>Loc theo lop</label>
-                    <select name="lop_id">
-                        <option value="">Tat ca lop</option>
-                        <?php foreach ($lops as $lop): ?>
-                            <option value="<?php echo htmlspecialchars($lop['lop_id']); ?>" <?php echo $lopFilter === $lop['lop_id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($lop['ten_lop']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div>
-                    <label>&nbsp;</label>
-                    <button type="submit">Tim kiem</button>
-                </div>
-                <div>
-                    <label>&nbsp;</label>
-                    <?php if ($isAdmin): ?>
-                        <a href="../../admin/them_sinh_vien.php"><button type="button" class="secondary">Them sinh vien</button></a>
-                    <?php else: ?>
-                        <button type="button" class="secondary" disabled title="Chi Admin duoc tao tai khoan sinh vien">Them sinh vien (Admin)</button>
-                    <?php endif; ?>
-                </div>
-            </form>
-        </div>
+		<div class="p-margin">
+			<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-lg">
+				<div>
+					<h1 class="font-display-lg text-display-lg text-on-background mb-2">Quan ly sinh vien</h1>
+					<p class="text-body-md text-on-surface-variant max-w-2xl">Theo doi danh sach sinh vien, cap nhat lop hoc va thong tin tai khoan.</p>
+				</div>
+				<?php if ($role === 'ADMIN'): ?>
+				<a class="flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-lg font-title-lg hover:shadow-lg transition-all active:scale-[0.98]" href="form.php">
+					<span class="material-symbols-outlined" data-icon="person_add">person_add</span>
+					Them sinh vien
+				</a>
+				<?php endif; ?>
+			</div>
 
-        <div class="card">
-            <table>
-                <thead>
-                    <tr>
-                        <th>MSV</th>
-                        <th>Ho ten</th>
-                        <th>Email</th>
-                        <th>Lop</th>
-                        <th>Ngay sinh</th>
-                        <th>Thao tac</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($students)): ?>
-                        <tr>
-                            <td colspan="6">Chua co du lieu sinh vien</td>
-                        </tr>
-                    <?php else: ?>
-                        <?php foreach ($students as $sv): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($sv['msv']); ?></td>
-                                <td><?php echo htmlspecialchars($sv['ten_sv']); ?></td>
-                                <td><?php echo htmlspecialchars($sv['email']); ?></td>
-                                <td><?php echo htmlspecialchars($sv['ten_lop']); ?></td>
-                                <td><?php echo htmlspecialchars((string)($sv['ngay_sinh'] ?? '')); ?></td>
-                                <td>
-                                    <div class="actions">
-                                        <a href="form.php?id=<?php echo urlencode($sv['sinh_vien_id']); ?>"><button type="button" class="secondary">Sua</button></a>
+			<?php if ($notice): ?>
+			<div class="mb-lg rounded-xl border border-primary-container/30 bg-primary-container/10 p-4 text-on-surface-variant">
+				<?php echo htmlspecialchars($notice); ?>
+			</div>
+			<?php endif; ?>
+			<?php if ($error): ?>
+			<div class="mb-lg rounded-xl border border-error-container bg-error-container/40 p-4 text-on-error-container">
+				<?php echo htmlspecialchars($error); ?>
+			</div>
+			<?php endif; ?>
 
-                                        <?php if ($isAdmin): ?>
-                                            <form method="post" class="inline-form" onsubmit="return confirm('Xac nhan xoa sinh vien?');">
-                                                <input type="hidden" name="form_action" value="delete_student">
-                                                <input type="hidden" name="sinh_vien_id" value="<?php echo htmlspecialchars($sv['sinh_vien_id']); ?>">
-                                                <button type="submit" class="danger">Xoa</button>
-                                            </form>
-                                        <?php endif; ?>
-                                    </div>
-                                    <form method="post" class="inline-form" style="margin-top:6px;">
-                                        <input type="hidden" name="form_action" value="transfer_class">
-                                        <input type="hidden" name="sinh_vien_id" value="<?php echo htmlspecialchars($sv['sinh_vien_id']); ?>">
-                                        <select name="lop_id_moi" style="width:170px;">
-                                            <?php foreach ($lops as $lop): ?>
-                                                <option value="<?php echo htmlspecialchars($lop['lop_id']); ?>"><?php echo htmlspecialchars($lop['ten_lop']); ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <button type="submit">Chuyen lop</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+			<form method="get" class="grid grid-cols-1 md:grid-cols-12 gap-sm mb-lg bg-white p-sm rounded-xl shadow-sm border border-outline-variant/30">
+				<div class="md:col-span-5">
+					<label class="block text-label-md font-label-md text-secondary mb-1.5 ml-1">Tim theo ten, msv, email</label>
+					<div class="relative">
+						<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+						<input class="w-full h-11 pl-10 border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md" id="client-search" name="keyword" value="<?php echo htmlspecialchars($keyword); ?>" placeholder="Loc nhanh tren bang..." type="text">
+					</div>
+				</div>
+				<div class="md:col-span-5">
+					<label class="block text-label-md font-label-md text-secondary mb-1.5 ml-1">Loc theo lop</label>
+					<select class="w-full h-11 border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md" name="lop_id">
+						<option value="">Tat ca lop</option>
+						<?php foreach ($lops as $lop): ?>
+							<option value="<?php echo htmlspecialchars($lop['lop_id']); ?>" <?php echo $lopFilter === $lop['lop_id'] ? 'selected' : ''; ?>>
+								<?php echo htmlspecialchars($lop['ten_lop']); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+				<div class="md:col-span-2 flex items-end">
+					<button class="w-full h-11 flex items-center justify-center gap-2 border border-primary text-primary rounded-lg font-semibold hover:bg-primary-container/10 transition-colors" type="submit">
+						<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+						Loc du lieu
+					</button>
+				</div>
+			</form>
 
-        <div class="card">
-            <h2 class="title" style="font-size:18px;">UC4.1 - Mo lop hoc phan</h2>
-            <form method="post" class="row">
-                <input type="hidden" name="form_action" value="create_lhp">
-                <div><label>Ma LHP</label><input name="ma_lhp" required></div>
-                <div>
-                    <label>Mon hoc</label>
-                    <select name="mon_hoc_id" required>
-                        <?php foreach ($monHocs as $mon): ?>
-                            <option value="<?php echo htmlspecialchars($mon['mon_hoc_id']); ?>"><?php echo htmlspecialchars($mon['ma_mon'] . ' - ' . $mon['ten_mon']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div>
-                    <label>Hoc ky</label>
-                    <select name="hoc_ky_id" required>
-                        <?php foreach ($hocKys as $hk): ?>
-                            <option value="<?php echo htmlspecialchars($hk['hoc_ky_id']); ?>"><?php echo htmlspecialchars($hk['ten_hoc_ky']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div>
-                    <label>Giang vien</label>
-                    <select name="giang_vien_id" required>
-                        <?php foreach ($giangViens as $gv): ?>
-                            <option value="<?php echo htmlspecialchars($gv['giang_vien_id']); ?>"><?php echo htmlspecialchars($gv['ma_gv'] . ' - ' . $gv['ten_gv']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div><label>Ty le CC</label><input type="number" min="0" max="100" name="ty_le_cc" value="10" required></div>
-                <div><label>Ty le GK</label><input type="number" min="0" max="100" name="ty_le_gk" value="30" required></div>
-                <div><label>Ty le CK</label><input type="number" min="0" max="100" name="ty_le_ck" value="60" required></div>
-                <div><label>&nbsp;</label><button type="submit">Tao LHP</button></div>
-            </form>
-        </div>
+			<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+				<table class="w-full text-left border-collapse font-data-table text-data-table">
+					<thead class="bg-slate-50/80 sticky top-0 border-b border-slate-100">
+						<tr>
+							<th class="px-6 py-4 font-semibold text-slate-700">MSV</th>
+							<th class="px-6 py-4 font-semibold text-slate-700">Ho ten</th>
+							<th class="px-6 py-4 font-semibold text-slate-700">Lop</th>
+							<th class="px-6 py-4 font-semibold text-slate-700">Email</th>
+							<th class="px-6 py-4 font-semibold text-slate-700 text-right">Thao tac</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-slate-100">
+						<?php if (empty($students)): ?>
+						<tr>
+							<td class="px-6 py-6 text-slate-500" colspan="5">Chua co du lieu sinh vien</td>
+						</tr>
+						<?php else: ?>
+						<?php foreach ($students as $sv): ?>
+							<tr class="student-row hover:bg-slate-50/50 transition-colors">
+								<td class="px-6 py-4 font-medium text-primary"><?php echo htmlspecialchars($sv['msv']); ?></td>
+								<td class="px-6 py-4 text-slate-600"><?php echo htmlspecialchars($sv['ten_sv']); ?></td>
+								<td class="px-6 py-4 text-slate-600"><?php echo htmlspecialchars($sv['ten_lop']); ?></td>
+								<td class="px-6 py-4 text-slate-600"><?php echo htmlspecialchars($sv['email']); ?></td>
+								<td class="px-6 py-4 text-right">
+									<div class="flex justify-end gap-2">
+										<a class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-body-md font-semibold text-primary border border-primary hover:bg-primary-container/10 transition-colors" href="form.php?id=<?php echo urlencode($sv['sinh_vien_id']); ?>">
+											<span class="material-symbols-outlined text-[18px]" data-icon="edit_square">edit_square</span>
+											Sua
+										</a>
+										<form method="post" onsubmit="return confirm('Xac nhan xoa sinh vien?');">
+											<input type="hidden" name="form_action" value="delete_student">
+											<input type="hidden" name="sinh_vien_id" value="<?php echo htmlspecialchars($sv['sinh_vien_id']); ?>">
+											<button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-body-md font-semibold text-error border border-error hover:bg-error-container/20 transition-colors" type="submit">
+												<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+												Xoa
+											</button>
+										</form>
+									</div>
+									<form method="post" class="mt-3 flex flex-wrap items-center justify-end gap-2">
+										<input type="hidden" name="form_action" value="transfer_class">
+										<input type="hidden" name="sinh_vien_id" value="<?php echo htmlspecialchars($sv['sinh_vien_id']); ?>">
+										<select class="h-10 w-56 border-outline-variant rounded-lg text-body-md" name="lop_id_moi">
+											<?php foreach ($lops as $lop): ?>
+												<option value="<?php echo htmlspecialchars($lop['lop_id']); ?>"><?php echo htmlspecialchars($lop['ten_lop']); ?></option>
+											<?php endforeach; ?>
+										</select>
+										<button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-body-md font-semibold text-primary border border-primary hover:bg-primary-container/10 transition-colors" type="submit">
+											<span class="material-symbols-outlined text-[18px]" data-icon="swap_horiz">swap_horiz</span>
+											Chuyen lop
+										</button>
+									</form>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+						<?php endif; ?>
+					</tbody>
+				</table>
+			</div>
+		</div>
 
-        <div class="card">
-            <h2 class="title" style="font-size:18px;">UC4.2 - Phan cong giang vien</h2>
-            <form method="post" class="row-3">
-                <input type="hidden" name="form_action" value="assign_lecturer">
-                <div>
-                    <label>Lop hoc phan</label>
-                    <select name="lhp_id" required>
-                        <?php foreach ($lhps as $lhp): ?>
-                            <option value="<?php echo htmlspecialchars($lhp['lhp_id']); ?>"><?php echo htmlspecialchars($lhp['ma_lhp'] . ' - ' . $lhp['ten_mon']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div>
-                    <label>Giang vien</label>
-                    <select name="giang_vien_id" required>
-                        <?php foreach ($giangViens as $gv): ?>
-                            <option value="<?php echo htmlspecialchars($gv['giang_vien_id']); ?>"><?php echo htmlspecialchars($gv['ma_gv'] . ' - ' . $gv['ten_gv']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div><label>&nbsp;</label><button type="submit">Cap nhat phan cong</button></div>
-            </form>
-        </div>
+		<?php include __DIR__ . '/../../layouts/footer.php'; ?>
+	</main>
+	<script>
+	const searchInput = document.getElementById('client-search');
+	const rows = document.querySelectorAll('.student-row');
 
-        <div class="card">
-            <h2 class="title" style="font-size:18px;">UC4.3 - Them/xoa sinh vien vao lop hoc phan</h2>
-            <div class="row-3">
-                <form method="post">
-                    <input type="hidden" name="form_action" value="add_student_to_lhp">
-                    <label>Lop hoc phan</label>
-                    <select name="lhp_id" required>
-                        <?php foreach ($lhps as $lhp): ?>
-                            <option value="<?php echo htmlspecialchars($lhp['lhp_id']); ?>"><?php echo htmlspecialchars($lhp['ma_lhp']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <label style="margin-top:8px;">Sinh vien</label>
-                    <select name="sinh_vien_id" required>
-                        <?php foreach ($students as $sv): ?>
-                            <option value="<?php echo htmlspecialchars($sv['sinh_vien_id']); ?>"><?php echo htmlspecialchars($sv['msv'] . ' - ' . $sv['ten_sv']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <button type="submit" style="margin-top:10px;">Them vao LHP</button>
-                </form>
+	function filterRows() {
+		const keyword = (searchInput?.value || '').toLowerCase();
+		rows.forEach((row) => {
+			const cells = row.querySelectorAll('td');
+			const text = Array.from(cells).slice(0, 4).map(cell => cell.textContent.toLowerCase()).join(' ');
+			row.style.display = text.includes(keyword) ? '' : 'none';
+		});
+	}
 
-                <form method="post">
-                    <input type="hidden" name="form_action" value="remove_student_from_lhp">
-                    <label>Lop hoc phan</label>
-                    <select name="lhp_id" required>
-                        <?php foreach ($lhps as $lhp): ?>
-                            <option value="<?php echo htmlspecialchars($lhp['lhp_id']); ?>"><?php echo htmlspecialchars($lhp['ma_lhp']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <label style="margin-top:8px;">Sinh vien</label>
-                    <select name="sinh_vien_id" required>
-                        <?php foreach ($students as $sv): ?>
-                            <option value="<?php echo htmlspecialchars($sv['sinh_vien_id']); ?>"><?php echo htmlspecialchars($sv['msv'] . ' - ' . $sv['ten_sv']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <button type="submit" class="danger" style="margin-top:10px;">Xoa khoi LHP</button>
-                </form>
-
-                <div>
-                    <label>Thong tin LHP hien co</label>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Ma LHP</th>
-                                <th>Mon hoc</th>
-                                <th>So SV</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($lhps as $lhp): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($lhp['ma_lhp']); ?></td>
-                                    <td><?php echo htmlspecialchars($lhp['ten_mon']); ?></td>
-                                    <td><?php echo htmlspecialchars((string)$lhp['so_luong_sv']); ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+	if (searchInput) {
+		searchInput.addEventListener('input', filterRows);
+	}
+	</script>
 </body>
 
 </html>

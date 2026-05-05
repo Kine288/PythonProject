@@ -240,8 +240,8 @@ Hệ thống Quản lý Sinh viên cấp Khoa là nền tảng tập trung (Cent
 - Lưu trữ (Persistent): Điểm GPA Hệ 10 và GPA Hệ 4 tổng hợp của học kỳ/toàn khóa bắt buộc lưu vào bảng `KET_QUA_HOC_KY` để phục vụ truy xuất tốc độ cao cho BR4 và BR5.
 - Bảng tham chiếu chuẩn:
     - 8.5 - 10.0 --> A (4.0)
-    - 8.0 - 8.4 --> B+ (3.5)
-    - 7.0 - 7.9 --> B (3.0)
+    - 7.8 - 8.4 --> B+ (3.5)
+    - 7.0 - 7.7 --> B (3.0)
     - 6.5 - 6.9 --> C+ (2.5)
     - 5.5 - 6.4 --> C (2.0)
     - 5.0 - 5.4 --> D+ (1.5)
