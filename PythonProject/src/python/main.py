@@ -6,21 +6,23 @@ from flask import Flask, jsonify
 
 # Ensure project root and current dir are available for imports.
 CURRENT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = CURRENT_DIR.parents[2]
+PROJECT_ROOT = CURRENT_DIR.parents[1]
 
 if str(PROJECT_ROOT) not in sys.path:
 	sys.path.append(str(PROJECT_ROOT))
 if str(CURRENT_DIR) not in sys.path:
 	sys.path.append(str(CURRENT_DIR))
 
-from src.python.api.diem_api import diem_bp  # noqa: E402
-from src.python.api.sinh_vien_api import sinh_vien_bp  # noqa: E402
+from api.diem_api import diem_bp  # noqa: E402
+from api.gpa_api import gpa_bp  # noqa: E402
+from api.sinh_vien_api import sinh_vien_bp  # noqa: E402
 
 
 def create_app() -> Flask:
 	app = Flask(__name__)
 
 	app.register_blueprint(diem_bp)
+	app.register_blueprint(gpa_bp)
 	app.register_blueprint(sinh_vien_bp)
 
 	@app.get("/health")
