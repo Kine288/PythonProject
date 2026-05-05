@@ -1,12 +1,14 @@
 from flask import Blueprint, jsonify, request
 
-from src.python.services.sinh_vien_service import (
+from services.sinh_vien_service import (
     add_student_to_lhp,
     assign_lecturer,
     create_lop_hoc_phan,
     create_student,
+    create_student_for_account,
     delete_student,
     get_student,
+    get_student_by_account,
     list_giang_vien,
     list_hoc_ky,
     list_lhp_enrollments,
@@ -46,9 +48,25 @@ def api_list_students():
     return _ok(list_students(keyword, lop_id))
 
 
+@sinh_vien_bp.get("")
+@sinh_vien_bp.get("/")
+def api_list_students_root():
+    keyword = request.args.get("keyword", "").strip()
+    lop_id = request.args.get("lop_id", "").strip()
+    return _ok(list_students(keyword, lop_id))
+
+
 @sinh_vien_bp.get("/students/<sinh_vien_id>")
 def api_get_student(sinh_vien_id):
     data = get_student(sinh_vien_id)
+    if not data:
+        return _error("Khong tim thay sinh vien", 404)
+    return _ok(data)
+
+
+@sinh_vien_bp.get("/students/by-account/<tai_khoan_id>")
+def api_get_student_by_account(tai_khoan_id):
+    data = get_student_by_account(tai_khoan_id)
     if not data:
         return _error("Khong tim thay sinh vien", 404)
     return _ok(data)
@@ -59,6 +77,18 @@ def api_create_student():
     payload = request.get_json(silent=True) or {}
     try:
         data = create_student(payload)
+        return _ok(data, "Tao sinh vien thanh cong", 201)
+    except ValueError as exc:
+        return _error(str(exc), 400)
+    except Exception as exc:
+        return _error(f"Khong the tao sinh vien: {exc}", 500)
+
+
+@sinh_vien_bp.post("/students/by-account/<tai_khoan_id>")
+def api_create_student_by_account(tai_khoan_id):
+    payload = request.get_json(silent=True) or {}
+    try:
+        data = create_student_for_account(tai_khoan_id, payload)
         return _ok(data, "Tao sinh vien thanh cong", 201)
     except ValueError as exc:
         return _error(str(exc), 400)
@@ -95,6 +125,23 @@ def api_transfer_class(sinh_vien_id):
     lop_id_moi = payload.get("lop_id_moi")
     if not lop_id_moi:
         return _error("Thieu lop_id_moi", 400)
+
+    try:
+        data = transfer_student_class(sinh_vien_id, lop_id_moi)
+        return _ok(data, "Chuyen lop thanh cong")
+    except ValueError as exc:
+        return _error(str(exc), 404)
+    except Exception as exc:
+        return _error(f"Khong the chuyen lop: {exc}", 500)
+
+
+@sinh_vien_bp.put("/chuyen-lop")
+def api_transfer_class_root():
+    payload = request.get_json(silent=True) or {}
+    sinh_vien_id = payload.get("sinh_vien_id")
+    lop_id_moi = payload.get("lop_id_moi")
+    if not sinh_vien_id or not lop_id_moi:
+        return _error("Thieu sinh_vien_id hoac lop_id_moi", 400)
 
     try:
         data = transfer_student_class(sinh_vien_id, lop_id_moi)

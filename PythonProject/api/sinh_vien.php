@@ -1,8 +1,14 @@
 <?php
 
+if (session_status() !== PHP_SESSION_ACTIVE && !headers_sent()) {
+	session_start();
+}
+
+require_once __DIR__ . '/../config/constants.php';
+
 function sinhVienProxyRequest(string $method, string $path, ?array $payload = null, array $query = []): array
 {
-	$baseUrl = 'http://127.0.0.1:5001/api/sinh-vien';
+	$baseUrl = rtrim(PYTHON_API_URL, '/') . '/api/sinh-vien';
 	$url = $baseUrl . $path;
 
 	if (!empty($query)) {
@@ -62,9 +68,13 @@ if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'])) {
 		$input = $_POST;
 	}
 
+	if ($action === '') {
+		$action = 'list_students';
+	}
+
 	switch ($action) {
 		case 'list_students':
-			sinhVienProxyRespond(sinhVienProxyRequest('GET', '/students', null, [
+			sinhVienProxyRespond(sinhVienProxyRequest('GET', '', null, [
 				'keyword' => $_GET['keyword'] ?? '',
 				'lop_id' => $_GET['lop_id'] ?? '',
 			]));
@@ -75,6 +85,14 @@ if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'])) {
 			break;
 
 		case 'create_student':
+			if (($_SESSION['user_role'] ?? '') !== 'ADMIN') {
+				sinhVienProxyRespond([
+					'success' => false,
+					'message' => 'Chi ADMIN moi co quyen tao sinh vien',
+					'status' => 403,
+				]);
+				break;
+			}
 			sinhVienProxyRespond(sinhVienProxyRequest('POST', '/students', $input));
 			break;
 
@@ -87,11 +105,10 @@ if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'])) {
 			break;
 
 		case 'transfer_class':
-			sinhVienProxyRespond(sinhVienProxyRequest(
-				'POST',
-				'/students/' . ($input['sinh_vien_id'] ?? '') . '/transfer-class',
-				['lop_id_moi' => $input['lop_id_moi'] ?? null]
-			));
+			sinhVienProxyRespond(sinhVienProxyRequest('PUT', '/chuyen-lop', [
+				'sinh_vien_id' => $input['sinh_vien_id'] ?? '',
+				'lop_id_moi' => $input['lop_id_moi'] ?? null,
+			]));
 			break;
 
 		case 'list_lop':
