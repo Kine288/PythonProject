@@ -6,7 +6,7 @@ DATABASE_HOST     = 'localhost'
 DATABASE_PORT     = 3306
 DATABASE_NAME     = 'project_python'
 DATABASE_USER     = 'root'
-DATABASE_PASSWORD = ''
+DATABASE_PASSWORD = '0835072866'
 
 def get_database_connection():
     try:
