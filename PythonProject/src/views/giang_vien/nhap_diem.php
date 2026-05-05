@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/../../../config/database.php';
+require_once __DIR__ . '/../../../config/constants.php';
 
 $lhp_id = $_GET['lhp_id'] ?? '';
 $tai_khoan_id = $_SESSION['user_id'] ?? '';
@@ -35,7 +36,7 @@ if (!$pdo) {
       if (!$lhp) {
         $page_error = 'Lop hoc phan khong ton tai hoac khong thuoc giang vien hien tai.';
       } else {
-        $stmt = $pdo->prepare("\
+        $stmt = $pdo->prepare("
           SELECT sv.sinh_vien_id, sv.msv, sv.ten_sv,
                d.ds_lhp_id, d.diem_cc, d.diem_gk, d.diem_ck
           FROM ds_lhp d
@@ -58,6 +59,7 @@ if (!$pdo) {
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -144,13 +146,35 @@ if (!$pdo) {
             "body-md": ["Inter"]
           },
           fontSize: {
-            "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
-            "display-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
-            "title-lg": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
-            "display-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-            "data-table": ["14px", {"lineHeight": "20px", "fontWeight": "450"}],
-            "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
-            "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            "label-md": ["12px", {
+              "lineHeight": "16px",
+              "letterSpacing": "0.02em",
+              "fontWeight": "500"
+            }],
+            "display-lg": ["32px", {
+              "lineHeight": "40px",
+              "fontWeight": "700"
+            }],
+            "title-lg": ["18px", {
+              "lineHeight": "28px",
+              "fontWeight": "600"
+            }],
+            "display-md": ["24px", {
+              "lineHeight": "32px",
+              "fontWeight": "600"
+            }],
+            "data-table": ["14px", {
+              "lineHeight": "20px",
+              "fontWeight": "450"
+            }],
+            "body-sm": ["13px", {
+              "lineHeight": "18px",
+              "fontWeight": "400"
+            }],
+            "body-md": ["14px", {
+              "lineHeight": "20px",
+              "fontWeight": "400"
+            }]
           }
         }
       }
@@ -161,11 +185,13 @@ if (!$pdo) {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
       vertical-align: middle;
     }
+
     body {
       background-color: #f1fbff;
     }
   </style>
 </head>
+
 <body class="font-body-md text-on-background">
   <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
   <main class="ml-64 min-h-screen">
@@ -191,13 +217,13 @@ if (!$pdo) {
       </div>
 
       <?php if ($page_error !== ''): ?>
-      <div class="mb-lg rounded-xl border border-error-container bg-error-container/40 p-4 text-on-error-container">
-        <?php echo htmlspecialchars($page_error); ?>
-      </div>
+        <div class="mb-lg rounded-xl border border-error-container bg-error-container/40 p-4 text-on-error-container">
+          <?php echo htmlspecialchars($page_error); ?>
+        </div>
       <?php elseif ($page_info !== ''): ?>
-      <div class="mb-lg rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-4 text-on-surface-variant">
-        <?php echo htmlspecialchars($page_info); ?>
-      </div>
+        <div class="mb-lg rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-4 text-on-surface-variant">
+          <?php echo htmlspecialchars($page_info); ?>
+        </div>
       <?php endif; ?>
 
       <div class="grid grid-cols-1 md:grid-cols-12 gap-sm mb-lg bg-white p-sm rounded-xl shadow-sm border border-outline-variant/30">
@@ -236,30 +262,30 @@ if (!$pdo) {
           </thead>
           <tbody class="divide-y divide-slate-100">
             <?php if (count($ds_sinh_vien) === 0): ?>
-            <tr>
-              <td class="px-6 py-6 text-slate-500" colspan="6">Khong co du lieu de hien thi.</td>
-            </tr>
+              <tr>
+                <td class="px-6 py-6 text-slate-500" colspan="6">Khong co du lieu de hien thi.</td>
+              </tr>
             <?php endif; ?>
             <?php foreach ($ds_sinh_vien as $sv): ?>
-            <tr class="hover:bg-slate-50/50 transition-colors group" data-id="<?php echo htmlspecialchars($sv['ds_lhp_id']); ?>">
-              <td class="px-6 py-4 font-medium text-primary"><?php echo htmlspecialchars($sv['msv']); ?></td>
-              <td class="px-6 py-4 text-slate-600"><?php echo htmlspecialchars($sv['ten_sv']); ?></td>
-              <td class="px-6 py-4">
-                <input type="number" min="0" max="10" step="0.1" class="diem-cc w-24 h-9 border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md" value="<?php echo htmlspecialchars($sv['diem_cc']); ?>">
-              </td>
-              <td class="px-6 py-4">
-                <input type="number" min="0" max="10" step="0.1" class="diem-gk w-24 h-9 border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md" value="<?php echo htmlspecialchars($sv['diem_gk']); ?>">
-              </td>
-              <td class="px-6 py-4">
-                <input type="number" min="0" max="10" step="0.1" class="diem-ck w-24 h-9 border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md" value="<?php echo htmlspecialchars($sv['diem_ck']); ?>">
-              </td>
-              <td class="px-6 py-4 text-right">
-                <button class="btn-luu inline-flex items-center gap-2 px-4 py-2 rounded-lg text-body-md font-semibold text-primary border border-primary hover:bg-primary-container/10 transition-colors disabled:opacity-50" data-lhp="<?php echo htmlspecialchars($lhp_id); ?>" type="button" <?php echo $is_editable ? '' : 'disabled'; ?>>
-                  <span class="material-symbols-outlined text-[18px]" data-icon="save">save</span>
-                  Luu
-                </button>
-              </td>
-            </tr>
+              <tr class="hover:bg-slate-50/50 transition-colors group" data-id="<?php echo htmlspecialchars($sv['ds_lhp_id']); ?>">
+                <td class="px-6 py-4 font-medium text-primary"><?php echo htmlspecialchars($sv['msv']); ?></td>
+                <td class="px-6 py-4 text-slate-600"><?php echo htmlspecialchars($sv['ten_sv']); ?></td>
+                <td class="px-6 py-4">
+                  <input type="number" min="0" max="10" step="0.1" class="diem-cc w-24 h-9 border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md" value="<?php echo htmlspecialchars($sv['diem_cc']); ?>">
+                </td>
+                <td class="px-6 py-4">
+                  <input type="number" min="0" max="10" step="0.1" class="diem-gk w-24 h-9 border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md" value="<?php echo htmlspecialchars($sv['diem_gk']); ?>">
+                </td>
+                <td class="px-6 py-4">
+                  <input type="number" min="0" max="10" step="0.1" class="diem-ck w-24 h-9 border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md" value="<?php echo htmlspecialchars($sv['diem_ck']); ?>">
+                </td>
+                <td class="px-6 py-4 text-right">
+                  <button class="btn-luu inline-flex items-center gap-2 px-4 py-2 rounded-lg text-body-md font-semibold text-primary border border-primary hover:bg-primary-container/10 transition-colors disabled:opacity-50" data-lhp="<?php echo htmlspecialchars($lhp_id); ?>" type="button" <?php echo $is_editable ? '' : 'disabled'; ?>>
+                    <span class="material-symbols-outlined text-[18px]" data-icon="save">save</span>
+                    Luu
+                  </button>
+                </td>
+              </tr>
             <?php endforeach; ?>
           </tbody>
         </table>
@@ -269,64 +295,72 @@ if (!$pdo) {
     <?php include __DIR__ . '/../layouts/footer.php'; ?>
   </main>
 
-<script>
-document.querySelectorAll('.btn-luu').forEach(btn => {
-  btn.addEventListener('click', function () {
-    const row = this.closest('tr');
-    const payload = {
-      ds_lhp_id: row.dataset.id,
-      lhp_id: this.dataset.lhp,
-      nguoi_thay_doi_id: '<?php echo htmlspecialchars($tai_khoan_id); ?>',
-      diem_cc: parseFloat(row.querySelector('.diem-cc').value || 0),
-      diem_gk: parseFloat(row.querySelector('.diem-gk').value || 0),
-      diem_ck: parseFloat(row.querySelector('.diem-ck').value || 0),
-    };
+  <script>
+    const PY_API = '<?php echo rtrim(PYTHON_API_URL, '/'); ?>';
 
-    fetch('../../../api/diem.php?action=luu_nhap', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-    .then(r => r.json())
-    .then(res => {
-      if (res.success) {
-        alert('Da luu');
-      } else {
-        alert('Loi: ' + res.error);
-      }
+    document.querySelectorAll('.btn-luu').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const row = this.closest('tr');
+        const payload = {
+          ds_lhp_id: row.dataset.id,
+          lhp_id: this.dataset.lhp,
+          nguoi_thay_doi_id: '<?php echo htmlspecialchars($tai_khoan_id); ?>',
+          diem_cc: parseFloat(row.querySelector('.diem-cc').value || 0),
+          diem_gk: parseFloat(row.querySelector('.diem-gk').value || 0),
+          diem_ck: parseFloat(row.querySelector('.diem-ck').value || 0),
+        };
+
+        fetch(`${PY_API}/diem/luu-nhap`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          })
+          .then(r => r.json())
+          .then(res => {
+            if (res.success) {
+              alert('Da luu');
+            } else {
+              alert('Loi: ' + res.error);
+            }
+          });
+      });
     });
-  });
-});
 
-document.getElementById('btn-gui-duyet').addEventListener('click', function () {
-  if (!confirm('Gui duyet toan bo LHP nay?')) return;
-  fetch('../../../api/diem.php?action=gui_duyet', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lhp_id: this.dataset.lhp })
-  })
-  .then(r => r.json())
-  .then(res => {
-    if (res.success) {
-      alert('Da gui duyet');
-    } else {
-      alert('Loi: ' + res.error);
+    document.getElementById('btn-gui-duyet').addEventListener('click', function() {
+      if (!confirm('Gui duyet toan bo LHP nay?')) return;
+      fetch(`${PY_API}/diem/gui-duyet`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            lhp_id: this.dataset.lhp
+          })
+        })
+        .then(r => r.json())
+        .then(res => {
+          if (res.success) {
+            alert('Da gui duyet');
+          } else {
+            alert('Loi: ' + res.error);
+          }
+        });
+    });
+
+    const searchInput = document.getElementById('tim-sv');
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        const keyword = this.value.toLowerCase();
+        document.querySelectorAll('#bang-diem tbody tr').forEach(row => {
+          const msv = row.children[0].textContent.toLowerCase();
+          const ten = row.children[1].textContent.toLowerCase();
+          row.style.display = (msv.includes(keyword) || ten.includes(keyword)) ? '' : 'none';
+        });
+      });
     }
-  });
-});
-
-const searchInput = document.getElementById('tim-sv');
-if (searchInput) {
-  searchInput.addEventListener('input', function () {
-    const keyword = this.value.toLowerCase();
-    document.querySelectorAll('#bang-diem tbody tr').forEach(row => {
-      const msv = row.children[0].textContent.toLowerCase();
-      const ten = row.children[1].textContent.toLowerCase();
-      row.style.display = (msv.includes(keyword) || ten.includes(keyword)) ? '' : 'none';
-    });
-  });
-}
-</script>
+  </script>
 </body>
-</html>
 
+</html>

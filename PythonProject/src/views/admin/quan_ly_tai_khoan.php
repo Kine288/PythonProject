@@ -95,6 +95,7 @@ $next_href = $next_page ? '?' . http_build_query($query_base + ['page' => $next_
 ?>
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -181,13 +182,35 @@ $next_href = $next_page ? '?' . http_build_query($query_base + ['page' => $next_
 						"body-md": ["Inter"]
 					},
 					fontSize: {
-						"label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
-						"display-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
-						"title-lg": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
-						"display-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-						"data-table": ["14px", {"lineHeight": "20px", "fontWeight": "450"}],
-						"body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
-						"body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+						"label-md": ["12px", {
+							"lineHeight": "16px",
+							"letterSpacing": "0.02em",
+							"fontWeight": "500"
+						}],
+						"display-lg": ["32px", {
+							"lineHeight": "40px",
+							"fontWeight": "700"
+						}],
+						"title-lg": ["18px", {
+							"lineHeight": "28px",
+							"fontWeight": "600"
+						}],
+						"display-md": ["24px", {
+							"lineHeight": "32px",
+							"fontWeight": "600"
+						}],
+						"data-table": ["14px", {
+							"lineHeight": "20px",
+							"fontWeight": "450"
+						}],
+						"body-sm": ["13px", {
+							"lineHeight": "18px",
+							"fontWeight": "400"
+						}],
+						"body-md": ["14px", {
+							"lineHeight": "20px",
+							"fontWeight": "400"
+						}]
 					}
 				}
 			}
@@ -198,11 +221,13 @@ $next_href = $next_page ? '?' . http_build_query($query_base + ['page' => $next_
 			font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 			vertical-align: middle;
 		}
+
 		body {
 			background-color: #f1fbff;
 		}
 	</style>
 </head>
+
 <body class="font-body-md text-on-background">
 	<?php include __DIR__ . '/../layouts/sidebar.php'; ?>
 	<main class="ml-64 min-h-screen">
@@ -334,4 +359,5 @@ $next_href = $next_page ? '?' . http_build_query($query_base + ['page' => $next_
 		<?php include __DIR__ . '/../layouts/footer.php'; ?>
 	</main>
 </body>
+
 </html>
