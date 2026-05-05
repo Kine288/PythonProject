@@ -1,25 +1,36 @@
 import os
 import sys
+from pathlib import Path
 
 from flask import Flask, jsonify
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
+# Ensure project root and current dir are available for imports.
+CURRENT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = CURRENT_DIR.parents[2]
 
-if PROJECT_ROOT not in sys.path:
-	sys.path.insert(0, PROJECT_ROOT)
-if CURRENT_DIR not in sys.path:
-	sys.path.insert(0, CURRENT_DIR)
+if str(PROJECT_ROOT) not in sys.path:
+	sys.path.append(str(PROJECT_ROOT))
+if str(CURRENT_DIR) not in sys.path:
+	sys.path.append(str(CURRENT_DIR))
 
-from api.diem_api import diem_bp
-
-app = Flask(__name__)
-app.register_blueprint(diem_bp)
+from src.python.api.diem_api import diem_bp  # noqa: E402
+from src.python.api.sinh_vien_api import sinh_vien_bp  # noqa: E402
 
 
-@app.get("/health")
-def health_check():
-	return jsonify({"status": "ok"})
+def create_app() -> Flask:
+	app = Flask(__name__)
+
+	app.register_blueprint(diem_bp)
+	app.register_blueprint(sinh_vien_bp)
+
+	@app.get("/health")
+	def health_check():
+		return jsonify({"status": "ok"})
+
+	return app
+
+
+app = create_app()
 
 
 if __name__ == "__main__":
