@@ -171,8 +171,12 @@ if (!$pdo) {
             try {
                 const res = await fetch(`${PY_API}/api/bao-cao/export/bang-diem-pdf`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sinh_vien_id: sinhVienId })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sinh_vien_id: sinhVienId
+                    })
                 });
 
                 if (!res.ok) {

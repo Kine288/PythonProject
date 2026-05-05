@@ -89,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -96,15 +97,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="../../../assets/css/Background.css">
     <style>
         :root {
-            --primary-mint: #00b894;     
-            --light-mint: #55efc4;       
-            --bg-grey: #f8f9fa;          
-            --text-dark: #2d3436;        
+            --primary-mint: #00b894;
+            --light-mint: #55efc4;
+            --bg-grey: #f8f9fa;
+            --text-dark: #2d3436;
             --text-gray: #636e72;
-            --shadow-soft: 0 10px 40px rgba(0, 184, 148, 0.15); 
+            --shadow-soft: 0 10px 40px rgba(0, 184, 148, 0.15);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -120,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             display: flex;
             align-items: center;
             padding: 0 2rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             flex-shrink: 0;
         }
 
@@ -144,13 +149,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             width: 100%;
             max-width: 420px;
             padding: 2.5rem;
-            border-radius: 24px; 
+            border-radius: 24px;
             box-shadow: var(--shadow-soft);
             transition: transform 0.3s ease;
         }
 
         .login-card:hover {
-            transform: translateY(-5px); 
+            transform: translateY(-5px);
         }
 
         .welcome-text {
@@ -193,14 +198,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-size: 13px;
             font-weight: 600;
             color: var(--text-dark);
-            margin-left: 4px; 
+            margin-left: 4px;
         }
 
         .form-group input {
             width: 100%;
             padding: 14px 16px;
             border-radius: 12px;
-            border: 2px solid #f1f2f6; 
+            border: 2px solid #f1f2f6;
             outline: none;
             font-size: 15px;
             background: #fdfdfd;
@@ -228,7 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border: none;
             transition: all 0.2s;
             text-align: center;
-            text-decoration: none; 
+            text-decoration: none;
         }
 
         .btn-primary {
@@ -289,16 +294,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--primary-mint);
             text-decoration: none;
             font-weight: 600;
-            margin-top: -5px; 
+            margin-top: -5px;
             margin-bottom: 1.5rem;
         }
-        
+
         .forgot-link:hover {
             text-decoration: underline;
         }
-
     </style>
 </head>
+
 <body>
 
     <div class="header">
@@ -307,7 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="main-container">
         <div class="login-card">
-            
+
             <div class="welcome-text">
                 <h2>Đăng nhập</h2>
             </div>
@@ -323,7 +328,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label for="email">Email đăng nhập</label>
                     <input type="text" id="email" name="email" placeholder="Nhập email" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="password">Mật khẩu</label>
                     <input type="password" id="password" name="password" placeholder="Nhập mật khẩu của bạn" required>
@@ -337,14 +342,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="divider">
                 <span>hoặc</span>
             </div>
-        <form method = "post">
-            <button name='btn_dang_nhap_khach' type="submit" class="btn btn-guest">
-                Tiếp tục với vai trò Khách
-            </button>
-        </form>
+            <form method="post">
+                <button name='btn_dang_nhap_khach' type="submit" class="btn btn-guest">
+                    Tiếp tục với vai trò Khách
+                </button>
+            </form>
         </div>
     </div>
 
 
 </body>
+
 </html>

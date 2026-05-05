@@ -48,14 +48,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$isAdmin && !$isEdit) {
         $error = 'Chi Admin duoc tao moi tai khoan sinh vien.';
     } else {
-    $payload = [
-        'msv' => trim($_POST['msv'] ?? ''),
-        'ten_sv' => trim($_POST['ten_sv'] ?? ''),
-        'email' => trim($_POST['email'] ?? ''),
-        'gioi_tinh' => $_POST['gioi_tinh'] ?? null,
-        'ngay_sinh' => $_POST['ngay_sinh'] ?? null,
-        'lop_id' => $_POST['lop_id'] ?? '',
-    ];
+        $payload = [
+            'msv' => trim($_POST['msv'] ?? ''),
+            'ten_sv' => trim($_POST['ten_sv'] ?? ''),
+            'email' => trim($_POST['email'] ?? ''),
+            'gioi_tinh' => $_POST['gioi_tinh'] ?? null,
+            'ngay_sinh' => $_POST['ngay_sinh'] ?? null,
+            'lop_id' => $_POST['lop_id'] ?? '',
+        ];
 
         if ($isEdit) {
             $res = sinhVienProxyRequest('PUT', '/students/' . $sinhVienId, $payload);
