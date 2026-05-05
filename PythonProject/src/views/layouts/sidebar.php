@@ -14,11 +14,11 @@
             <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
             <span>Bang dieu khien</span>
         </a>
-        <a class="flex items-center gap-3 px-3 py-2 bg-teal-50 text-teal-600 font-semibold rounded-lg scale-100 active:scale-95 origin-left font-['Manrope'] text-sm" href="#">
+        <a class="flex items-center gap-3 px-3 py-2 bg-teal-50 text-teal-600 font-semibold rounded-lg scale-100 active:scale-95 origin-left font-['Manrope'] text-sm" href="/PythonProject/PythonProject/src/views/giao_vu/sinh_vien/danh_sach.php">
             <span class="material-symbols-outlined" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span>
             <span>Quan ly Sinh vien</span>
         </a>
-        <a class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:text-teal-500 hover:bg-slate-50 rounded-lg transition-all duration-200 scale-100 active:scale-95 origin-left font-['Manrope'] text-sm" href="#">
+        <a class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:text-teal-500 hover:bg-slate-50 rounded-lg transition-all duration-200 scale-100 active:scale-95 origin-left font-['Manrope'] text-sm" href="/PythonProject/PythonProject/src/views/giao_vu/duyet_diem.php">
             <span class="material-symbols-outlined" data-icon="class">class</span>
             <span>Lop hoc phan</span>
         </a>
@@ -26,7 +26,7 @@
             <span class="material-symbols-outlined" data-icon="assignment_ind">assignment_ind</span>
             <span>Phan cong giang vien</span>
         </a>
-        <a class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:text-teal-500 hover:bg-slate-50 rounded-lg transition-all duration-200 scale-100 active:scale-95 origin-left font-['Manrope'] text-sm" href="#">
+        <a class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:text-teal-500 hover:bg-slate-50 rounded-lg transition-all duration-200 scale-100 active:scale-95 origin-left font-['Manrope'] text-sm" href="/PythonProject/PythonProject/src/views/giao_vu/tong_ket_hoc_vu.php">
             <span class="material-symbols-outlined" data-icon="analytics">analytics</span>
             <span>Bao cao thong ke</span>
         </a>
