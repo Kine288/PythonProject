@@ -71,9 +71,7 @@ if (!$pdo) {
                             <th class="px-3 py-2 text-left">GK</th>
                             <th class="px-3 py-2 text-left">CK</th>
                             <th class="px-3 py-2 text-left">Diem tong</th>
-                            <th class="px-3 py-2 text-left">GPA tich luy he 4</th>
-                            <th class="px-3 py-2 text-left">Xep loai</th>
-                            <th class="px-3 py-2 text-left">Muc canh bao</th>
+                            <th class="px-3 py-2 text-left">Trang thai diem</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -92,7 +90,7 @@ if (!$pdo) {
 
         async function loadSummary() {
             const lhpId = lhpEl.value;
-            const res = await fetch(`${PY_API}/api/gpa/summary/lhp/${encodeURIComponent(lhpId)}`);
+            const res = await fetch(`${PY_API}/api/diem/lhp/${encodeURIComponent(lhpId)}`);
             const data = await res.json();
 
             if (!data.success) {
@@ -103,7 +101,7 @@ if (!$pdo) {
             tbody.innerHTML = '';
 
             if (rows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="px-3 py-3">Khong co du lieu.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="px-3 py-3">Khong co du lieu.</td></tr>';
                 statusBox.textContent = 'Khong co du lieu tong hop cho LHP da chon.';
                 return;
             }
@@ -113,14 +111,12 @@ if (!$pdo) {
                 tr.className = 'border-t border-slate-100';
                 tr.innerHTML = `
                     <td class="px-3 py-2">${item.msv || ''}</td>
-                    <td class="px-3 py-2">${item.ten_sv || ''}</td>
+                    <td class="px-3 py-2">${item.ho_ten || ''}</td>
                     <td class="px-3 py-2">${item.diem_cc ?? ''}</td>
                     <td class="px-3 py-2">${item.diem_gk ?? ''}</td>
                     <td class="px-3 py-2">${item.diem_ck ?? ''}</td>
                     <td class="px-3 py-2">${item.diem_tong ?? ''}</td>
-                    <td class="px-3 py-2">${item.gpa_tich_luy_he_4 ?? ''}</td>
-                    <td class="px-3 py-2">${item.xep_loai || ''}</td>
-                    <td class="px-3 py-2">${item.muc_canh_bao ?? 0}</td>
+                    <td class="px-3 py-2">${item.trang_thai_diem || ''}</td>
                 `;
                 tbody.appendChild(tr);
             });

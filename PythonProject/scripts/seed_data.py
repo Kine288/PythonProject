@@ -1,12 +1,17 @@
-"""Seed minimum data for day-1 integration.
+"""Seed data for the Student Management System.
 
-Data includes:
-- base catalog (roles, faculty, school year, classes, semester, courses)
-- 2 lecturers and 20 students
-- 3 course sections (LHP) with lecturer assignment
-- student registrations into LHP + study history
+Usage:
+	python scripts/seed_data.py
+
+Assumptions:
+- Database and tables from data/schema.sql already exist.
+- Student login identifier is exactly msv (stored in tai_khoan.email).
 """
 
+from __future__ import annotations
+
+from datetime import datetime
+import hashlib
 from pathlib import Path
 import sys
 from typing import Dict, List, Tuple
@@ -19,315 +24,516 @@ if str(PROJECT_ROOT) not in sys.path:
 from config.db_config import get_database_connection
 
 
-ROLE_IDS = {
-	"ADMIN": "10000000000000000000000000000001",
-	"GIAO_VU": "10000000000000000000000000000002",
-	"GIANG_VIEN": "10000000000000000000000000000003",
-	"SINH_VIEN": "10000000000000000000000000000004",
-}
-
-KHOA_CNTT_ID = "20000000000000000000000000000001"
-NIEN_KHOA_ID = "20000000000000000000000000000002"
-HOC_KY_ID = "20000000000000000000000000000003"
-
-LOP_IDS = [
-	"21000000000000000000000000000001",
-	"21000000000000000000000000000002",
-	"21000000000000000000000000000003",
-]
-
-MON_HOC_IDS = [
-	"22000000000000000000000000000001",
-	"22000000000000000000000000000002",
-	"22000000000000000000000000000003",
-]
-
-GV_ACCOUNT_IDS = [
-	"23000000000000000000000000000001",
-	"23000000000000000000000000000002",
-]
-
-GV_IDS = [
-	"23100000000000000000000000000001",
-	"23100000000000000000000000000002",
-]
-
-LHP_IDS = [
-	"24000000000000000000000000000001",
-	"24000000000000000000000000000002",
-	"24000000000000000000000000000003",
-]
+def hash_password(raw: str) -> str:
+	return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def upsert(cursor, sql: str, params: Tuple):
+def upsert(cursor, sql: str, params: Tuple) -> None:
 	cursor.execute(sql, params)
 
 
-def seed_roles(cursor):
-	for role_name, role_id in ROLE_IDS.items():
+IDS = {
+	"khoa_cntt": "20000000000000000000000000000001",
+	"hk_1": "22000000000000000000000000000001",
+	"hk_2": "22000000000000000000000000000002",
+	"hk_3": "22000000000000000000000000000003",
+	"nien_khoa": {
+		"2021-2025": "21000000000000000000000000000001",
+		"2022-2026": "21000000000000000000000000000002",
+		"2023-2027": "21000000000000000000000000000003",
+		"2024-2028": "21000000000000000000000000000004",
+	},
+	"lop": {
+		"CNTT-K2": "23000000000000000000000000000001",
+		"CNTT-K3": "23000000000000000000000000000002",
+		"CNTT-K4": "23000000000000000000000000000003",
+		"CNTT-K5": "23000000000000000000000000000004",
+	},
+	"tai_khoan": {
+		"admin": "24000000000000000000000000000001",
+		"giaovu1": "24000000000000000000000000000002",
+		"giaovu2": "24000000000000000000000000000003",
+		"gv01": "24000000000000000000000000000011",
+		"gv02": "24000000000000000000000000000012",
+		"gv03": "24000000000000000000000000000013",
+		"gv04": "24000000000000000000000000000014",
+	},
+	"giang_vien": {
+		"gv01": "25000000000000000000000000000001",
+		"gv02": "25000000000000000000000000000002",
+		"gv03": "25000000000000000000000000000003",
+		"gv04": "25000000000000000000000000000004",
+	},
+	"mon_hoc": {
+		"CNTT101": "26000000000000000000000000000001",
+		"CNTT102": "26000000000000000000000000000002",
+		"CNTT201": "26000000000000000000000000000003",
+		"CNTT202": "26000000000000000000000000000004",
+		"GDTC001": "26000000000000000000000000000005",
+		"CNTT301": "26000000000000000000000000000006",
+	},
+	"lhp": {
+		"LHP01": "27000000000000000000000000000001",
+		"LHP02": "27000000000000000000000000000002",
+		"LHP03": "27000000000000000000000000000003",
+		"LHP04": "27000000000000000000000000000004",
+	},
+}
+
+
+def seed_catalog(cursor) -> None:
+	upsert(
+		cursor,
+		"""
+		INSERT INTO khoa_bo_mon (khoa_id, ten_khoa, ma_khoa)
+		VALUES (%s, %s, %s)
+		ON DUPLICATE KEY UPDATE ten_khoa = VALUES(ten_khoa), ma_khoa = VALUES(ma_khoa)
+		""",
+		(IDS["khoa_cntt"], "Khoa Cong nghe thong tin", "CNTT"),
+	)
+
+	nien_khoa_rows = [
+		(IDS["nien_khoa"]["2021-2025"], "2021-2025", 2021),
+		(IDS["nien_khoa"]["2022-2026"], "2022-2026", 2022),
+		(IDS["nien_khoa"]["2023-2027"], "2023-2027", 2023),
+		(IDS["nien_khoa"]["2024-2028"], "2024-2028", 2024),
+	]
+	for row in nien_khoa_rows:
 		upsert(
 			cursor,
 			"""
-			INSERT INTO vai_tro (vai_tro_id, ten_vai_tro, mo_ta)
+			INSERT INTO nien_khoa (nien_khoa_id, ten_nien_khoa, nam_bat_dau)
 			VALUES (%s, %s, %s)
-			ON DUPLICATE KEY UPDATE ten_vai_tro = VALUES(ten_vai_tro), mo_ta = VALUES(mo_ta)
+			ON DUPLICATE KEY UPDATE ten_nien_khoa = VALUES(ten_nien_khoa), nam_bat_dau = VALUES(nam_bat_dau)
 			""",
-			(role_id, role_name, f"Vai tro {role_name}"),
+			row,
 		)
 
-
-def seed_catalog(cursor):
-	upsert(
-		cursor,
-		"""
-		INSERT INTO khoa (khoa_id, ma_khoa, ten_khoa)
-		VALUES (%s, %s, %s)
-		ON DUPLICATE KEY UPDATE ten_khoa = VALUES(ten_khoa)
-		""",
-		(KHOA_CNTT_ID, "CNTT", "Khoa Cong nghe thong tin"),
-	)
-
-	upsert(
-		cursor,
-		"""
-		INSERT INTO nien_khoa (nien_khoa_id, ma_nien_khoa, ten_nien_khoa)
-		VALUES (%s, %s, %s)
-		ON DUPLICATE KEY UPDATE ten_nien_khoa = VALUES(ten_nien_khoa)
-		""",
-		(NIEN_KHOA_ID, "2023-2027", "Nien khoa 2023-2027"),
-	)
-
-	classes = ["CNTT-A", "CNTT-B", "CNTT-C"]
-	for index, lop_id in enumerate(LOP_IDS):
+	lop_rows = [
+		(IDS["lop"]["CNTT-K2"], "CNTT-K2", "Lop CNTT K2", IDS["nien_khoa"]["2021-2025"], IDS["khoa_cntt"]),
+		(IDS["lop"]["CNTT-K3"], "CNTT-K3", "Lop CNTT K3", IDS["nien_khoa"]["2022-2026"], IDS["khoa_cntt"]),
+		(IDS["lop"]["CNTT-K4"], "CNTT-K4", "Lop CNTT K4", IDS["nien_khoa"]["2023-2027"], IDS["khoa_cntt"]),
+		(IDS["lop"]["CNTT-K5"], "CNTT-K5", "Lop CNTT K5", IDS["nien_khoa"]["2024-2028"], IDS["khoa_cntt"]),
+	]
+	for row in lop_rows:
 		upsert(
 			cursor,
 			"""
-			INSERT INTO lop (lop_id, khoa_id, nien_khoa_id, ten_lop)
-			VALUES (%s, %s, %s, %s)
-			ON DUPLICATE KEY UPDATE ten_lop = VALUES(ten_lop)
+			INSERT INTO lop_sinh_hoat (lop_id, ma_lop, ten_lop, nien_khoa_id, khoa_id)
+			VALUES (%s, %s, %s, %s, %s)
+			ON DUPLICATE KEY UPDATE ten_lop = VALUES(ten_lop), nien_khoa_id = VALUES(nien_khoa_id), khoa_id = VALUES(khoa_id)
 			""",
-			(lop_id, KHOA_CNTT_ID, NIEN_KHOA_ID, classes[index]),
+			row,
 		)
 
-	upsert(
-		cursor,
-		"""
-		INSERT INTO hoc_ky (hoc_ky_id, ma_hoc_ky, ten_hoc_ky, ngay_bat_dau, ngay_ket_thuc, is_hien_tai)
-		VALUES (%s, %s, %s, %s, %s, 1)
-		ON DUPLICATE KEY UPDATE ten_hoc_ky = VALUES(ten_hoc_ky), is_hien_tai = 1
-		""",
-		(HOC_KY_ID, "HK2-2025", "Hoc ky 2 nam hoc 2025-2026", "2026-01-05", "2026-05-20"),
-	)
+	hoc_ky_rows = [
+		(IDS["hk_1"], "HK1 2023-2024", "2023-2024", 1, False, "2023-09-01", "2024-01-15"),
+		(IDS["hk_2"], "HK2 2023-2024", "2023-2024", 2, True, "2024-01-22", "2024-05-31"),
+		(IDS["hk_3"], "HK1 2024-2025", "2024-2025", 1, False, "2024-09-01", "2025-01-15"),
+	]
+	for row in hoc_ky_rows:
+		upsert(
+			cursor,
+			"""
+			INSERT INTO hoc_ky (hoc_ky_id, ten_hoc_ky, nam_hoc, ky_hoc, is_hien_tai, ngay_bat_dau, ngay_ket_thuc)
+			VALUES (%s, %s, %s, %s, %s, %s, %s)
+			ON DUPLICATE KEY UPDATE
+				ten_hoc_ky = VALUES(ten_hoc_ky),
+				nam_hoc = VALUES(nam_hoc),
+				ky_hoc = VALUES(ky_hoc),
+				is_hien_tai = VALUES(is_hien_tai),
+				ngay_bat_dau = VALUES(ngay_bat_dau),
+				ngay_ket_thuc = VALUES(ngay_ket_thuc)
+			""",
+			row,
+		)
 
-	subjects = [
-		(MON_HOC_IDS[0], "PY101", "Lap trinh Python", 3),
-		(MON_HOC_IDS[1], "DB201", "Co so du lieu", 3),
-		(MON_HOC_IDS[2], "SE202", "Cong nghe phan mem", 2),
+	mon_rows = [
+		(IDS["mon_hoc"]["CNTT101"], "CNTT101", "Lap trinh co ban", 3, True),
+		(IDS["mon_hoc"]["CNTT102"], "CNTT102", "Co so du lieu", 3, True),
+		(IDS["mon_hoc"]["CNTT201"], "CNTT201", "Lap trinh huong doi tuong", 3, True),
+		(IDS["mon_hoc"]["CNTT202"], "CNTT202", "Mang may tinh", 3, True),
+		(IDS["mon_hoc"]["GDTC001"], "GDTC001", "Giao duc the chat", 2, False),
+		(IDS["mon_hoc"]["CNTT301"], "CNTT301", "Ky thuat phan mem", 3, True),
+	]
+	for row in mon_rows:
+		upsert(
+			cursor,
+			"""
+			INSERT INTO mon_hoc (mon_hoc_id, ma_mon, ten_mon, so_tin_chi, tinh_gpa)
+			VALUES (%s, %s, %s, %s, %s)
+			ON DUPLICATE KEY UPDATE ten_mon = VALUES(ten_mon), so_tin_chi = VALUES(so_tin_chi), tinh_gpa = VALUES(tinh_gpa)
+			""",
+			row,
+		)
+
+
+def seed_accounts_and_staff(cursor) -> Dict[str, str]:
+	account_rows = [
+		(IDS["tai_khoan"]["admin"], "admin@khoa.edu.vn", hash_password("Admin@123"), "ADMIN", True),
+		(IDS["tai_khoan"]["giaovu1"], "giaovu1@khoa.edu.vn", hash_password("GiaoVu@123"), "GIAO_VU", True),
+		(IDS["tai_khoan"]["giaovu2"], "giaovu2@khoa.edu.vn", hash_password("GiaoVu@123"), "GIAO_VU", True),
+		(IDS["tai_khoan"]["gv01"], "gv01@khoa.edu.vn", hash_password("GiangVien@123"), "GIANG_VIEN", True),
+		(IDS["tai_khoan"]["gv02"], "gv02@khoa.edu.vn", hash_password("GiangVien@123"), "GIANG_VIEN", True),
+		(IDS["tai_khoan"]["gv03"], "gv03@khoa.edu.vn", hash_password("GiangVien@123"), "GIANG_VIEN", True),
+		(IDS["tai_khoan"]["gv04"], "gv04@khoa.edu.vn", hash_password("GiangVien@123"), "GIANG_VIEN", True),
 	]
 
-	for mon_hoc_id, ma_mon, ten_mon, so_tin_chi in subjects:
+	for row in account_rows:
 		upsert(
 			cursor,
 			"""
-			INSERT INTO mon_hoc (mon_hoc_id, ma_mon, ten_mon, so_tin_chi, khoa_id, is_tinh_gpa)
-			VALUES (%s, %s, %s, %s, %s, 1)
-			ON DUPLICATE KEY UPDATE ten_mon = VALUES(ten_mon), so_tin_chi = VALUES(so_tin_chi)
+			INSERT INTO tai_khoan (tai_khoan_id, email, mat_khau_hash, vai_tro, is_active)
+			VALUES (%s, %s, %s, %s, %s)
+			ON DUPLICATE KEY UPDATE mat_khau_hash = VALUES(mat_khau_hash), vai_tro = VALUES(vai_tro), is_active = VALUES(is_active)
 			""",
-			(mon_hoc_id, ma_mon, ten_mon, so_tin_chi, KHOA_CNTT_ID),
+			row,
 		)
 
-	mon_map: Dict[str, str] = {}
-	for ma_mon in ["PY101", "DB201", "SE202"]:
-		cursor.execute("SELECT mon_hoc_id FROM mon_hoc WHERE ma_mon = %s LIMIT 1", (ma_mon,))
-		row = cursor.fetchone()
-		if row:
-			mon_map[ma_mon] = row["mon_hoc_id"]
-
-	cursor.execute("SELECT hoc_ky_id FROM hoc_ky WHERE ma_hoc_ky = %s LIMIT 1", ("HK2-2025",))
-	hoc_ky_row = cursor.fetchone()
-	hoc_ky_id = hoc_ky_row["hoc_ky_id"] if hoc_ky_row else HOC_KY_ID
+	giang_vien_rows = [
+		(IDS["giang_vien"]["gv01"], IDS["tai_khoan"]["gv01"], "gv01", "Giang vien 01", "Thac si", None, IDS["khoa_cntt"], "0911000001"),
+		(IDS["giang_vien"]["gv02"], IDS["tai_khoan"]["gv02"], "gv02", "Giang vien 02", "Thac si", None, IDS["khoa_cntt"], "0911000002"),
+		(IDS["giang_vien"]["gv03"], IDS["tai_khoan"]["gv03"], "gv03", "Giang vien 03", "Tien si", None, IDS["khoa_cntt"], "0911000003"),
+		(IDS["giang_vien"]["gv04"], IDS["tai_khoan"]["gv04"], "gv04", "Giang vien 04", "Tien si", None, IDS["khoa_cntt"], "0911000004"),
+	]
+	for row in giang_vien_rows:
+		upsert(
+			cursor,
+			"""
+			INSERT INTO giang_vien (giang_vien_id, tai_khoan_id, ma_gv, ho_ten, hoc_vi, hoc_ham, khoa_id, so_dien_thoai)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+			ON DUPLICATE KEY UPDATE ho_ten = VALUES(ho_ten), hoc_vi = VALUES(hoc_vi), hoc_ham = VALUES(hoc_ham), khoa_id = VALUES(khoa_id), so_dien_thoai = VALUES(so_dien_thoai)
+			""",
+			row,
+		)
 
 	return {
-		"mon_map": mon_map,
-		"hoc_ky_id": hoc_ky_id,
+		"gv01": IDS["giang_vien"]["gv01"],
+		"gv02": IDS["giang_vien"]["gv02"],
+		"gv03": IDS["giang_vien"]["gv03"],
+		"gv04": IDS["giang_vien"]["gv04"],
 	}
 
 
-def seed_lecturers(cursor):
-	gv_accounts = [
-		(GV_ACCOUNT_IDS[0], "gv.nguyenvana@edu.local", "123456"),
-		(GV_ACCOUNT_IDS[1], "gv.tranthib@edu.local", "123456"),
-	]
-
-	for tai_khoan_id, email, mat_khau in gv_accounts:
-		upsert(
-			cursor,
-			"""
-			INSERT INTO tai_khoan (tai_khoan_id, email, mat_khau, vai_tro_id, is_active)
-			VALUES (%s, %s, %s, %s, 1)
-			ON DUPLICATE KEY UPDATE email = VALUES(email), is_active = 1
-			""",
-			(tai_khoan_id, email, mat_khau, ROLE_IDS["GIANG_VIEN"]),
-		)
-
-	gv_profiles = [
-		(GV_IDS[0], GV_ACCOUNT_IDS[0], "GV001", "Nguyen Van A", 1, "Thac si"),
-		(GV_IDS[1], GV_ACCOUNT_IDS[1], "GV002", "Tran Thi B", 0, "Tien si"),
-	]
-
-	for giang_vien_id, tai_khoan_id, ma_gv, ten_gv, gioi_tinh, hoc_vi in gv_profiles:
-		upsert(
-			cursor,
-			"""
-			INSERT INTO giang_vien (giang_vien_id, tai_khoan_id, ma_gv, ten_gv, gioi_tinh, khoa_id, hoc_vi)
-			VALUES (%s, %s, %s, %s, %s, %s, %s)
-			ON DUPLICATE KEY UPDATE ten_gv = VALUES(ten_gv), hoc_vi = VALUES(hoc_vi)
-			""",
-			(giang_vien_id, tai_khoan_id, ma_gv, ten_gv, gioi_tinh, KHOA_CNTT_ID, hoc_vi),
-		)
-
-	gv_map: Dict[str, str] = {}
-	for ma_gv in ["GV001", "GV002"]:
-		cursor.execute("SELECT giang_vien_id FROM giang_vien WHERE ma_gv = %s LIMIT 1", (ma_gv,))
-		row = cursor.fetchone()
-		if row:
-			gv_map[ma_gv] = row["giang_vien_id"]
-	return gv_map
-
-
-def _build_students() -> List[Dict[str, str]]:
+def build_students() -> List[Dict[str, str]]:
 	students: List[Dict[str, str]] = []
-	for i in range(1, 21):
-		account_id = f"25{i:030d}"
-		student_id = f"26{i:030d}"
-		students.append(
-			{
-				"tai_khoan_id": account_id,
-				"sinh_vien_id": student_id,
-				"msv": f"SV{i:03d}",
-				"ten_sv": f"Sinh Vien {i:02d}",
-				"gioi_tinh": 1 if i % 2 else 0,
-				"ngay_sinh": f"2005-{((i % 12) + 1):02d}-{((i % 27) + 1):02d}",
-				"lop_id": LOP_IDS[(i - 1) % len(LOP_IDS)],
-				"email": f"sv{i:03d}@edu.local",
-			}
-		)
-	return students
-
-
-def seed_students(cursor) -> List[Dict[str, str]]:
-	students = _build_students()
-	for student in students:
-		upsert(
-			cursor,
-			"""
-			INSERT INTO tai_khoan (tai_khoan_id, email, mat_khau, vai_tro_id, is_active)
-			VALUES (%s, %s, %s, %s, 1)
-			ON DUPLICATE KEY UPDATE email = VALUES(email), is_active = 1
-			""",
-			(
-				student["tai_khoan_id"],
-				student["email"],
-				"123456",
-				ROLE_IDS["SINH_VIEN"],
-			),
-		)
-
-		upsert(
-			cursor,
-			"""
-			INSERT INTO sinh_vien (sinh_vien_id, tai_khoan_id, msv, ten_sv, gioi_tinh, ngay_sinh, lop_id)
-			VALUES (%s, %s, %s, %s, %s, %s, %s)
-			ON DUPLICATE KEY UPDATE ten_sv = VALUES(ten_sv), lop_id = VALUES(lop_id), ngay_sinh = VALUES(ngay_sinh)
-			""",
-			(
-				student["sinh_vien_id"],
-				student["tai_khoan_id"],
-				student["msv"],
-				student["ten_sv"],
-				student["gioi_tinh"],
-				student["ngay_sinh"],
-				student["lop_id"],
-			),
-		)
-	return students
-
-
-def seed_lhp_and_registrations(
-	cursor,
-	students: List[Dict[str, str]],
-	gv_map: Dict[str, str],
-	mon_map: Dict[str, str],
-	hoc_ky_id: str,
-):
-	lhp_rows = [
-		(LHP_IDS[0], "LHP-PY-01", gv_map.get("GV001", GV_IDS[0]), mon_map.get("PY101", MON_HOC_IDS[0])),
-		(LHP_IDS[1], "LHP-DB-01", gv_map.get("GV002", GV_IDS[1]), mon_map.get("DB201", MON_HOC_IDS[1])),
-		(LHP_IDS[2], "LHP-SE-01", gv_map.get("GV001", GV_IDS[0]), mon_map.get("SE202", MON_HOC_IDS[2])),
+	classes = [
+		("CNTT-K2", "725101"),
+		("CNTT-K3", "735101"),
+		("CNTT-K4", "745101"),
+		("CNTT-K5", "755101"),
 	]
+	index = 1
+	for class_name, prefix in classes:
+		for i in range(1, 6):
+			msv = f"{prefix}{i:03d}"
+			students.append(
+				{
+					"tai_khoan_id": f"3000000000000000000000000000{index:04d}",
+					"sinh_vien_id": f"3100000000000000000000000000{index:04d}",
+					"msv": msv,
+					"ho_ten": f"Sinh vien {msv}",
+					"ngay_sinh": f"200{(index % 5) + 1}-{(index % 12) + 1:02d}-{(index % 27) + 1:02d}",
+					"gioi_tinh": "Nam" if index % 2 else "Nu",
+					"lop_id": IDS["lop"][class_name],
+				}
+			)
+			index += 1
+	return students
 
-	for lhp_id, ma_lhp, giang_vien_id, mon_hoc_id in lhp_rows:
+
+def seed_students(cursor, students: List[Dict[str, str]]) -> None:
+	for sv in students:
+		# Student account = student code (msv)
+		upsert(
+			cursor,
+			"""
+			INSERT INTO tai_khoan (tai_khoan_id, email, mat_khau_hash, vai_tro, is_active)
+			VALUES (%s, %s, %s, 'SINH_VIEN', TRUE)
+			ON DUPLICATE KEY UPDATE
+				email = VALUES(email),
+				mat_khau_hash = VALUES(mat_khau_hash),
+				is_active = VALUES(is_active)
+			""",
+			(sv["tai_khoan_id"], sv["msv"], hash_password(sv["msv"])),
+		)
+
+		upsert(
+			cursor,
+			"""
+			INSERT INTO sinh_vien (sinh_vien_id, tai_khoan_id, msv, ho_ten, ngay_sinh, gioi_tinh, lop_id, trang_thai)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, 'DANG_HOC')
+			ON DUPLICATE KEY UPDATE
+				ho_ten = VALUES(ho_ten),
+				ngay_sinh = VALUES(ngay_sinh),
+				gioi_tinh = VALUES(gioi_tinh),
+				lop_id = VALUES(lop_id),
+				trang_thai = VALUES(trang_thai)
+			""",
+			(
+				sv["sinh_vien_id"],
+				sv["tai_khoan_id"],
+				sv["msv"],
+				sv["ho_ten"],
+				sv["ngay_sinh"],
+				sv["gioi_tinh"],
+				sv["lop_id"],
+			),
+		)
+
+
+def seed_lhp(cursor, gv_map: Dict[str, str]) -> None:
+	lhp_rows = [
+		(
+			IDS["lhp"]["LHP01"],
+			"CNTT101-HK2-2024",
+			IDS["mon_hoc"]["CNTT101"],
+			IDS["hk_2"],
+			gv_map["gv01"],
+			10.0,
+			30.0,
+			60.0,
+			"DA_DUYET",
+			False,
+		),
+		(
+			IDS["lhp"]["LHP02"],
+			"CNTT102-HK2-2024",
+			IDS["mon_hoc"]["CNTT102"],
+			IDS["hk_2"],
+			gv_map["gv02"],
+			10.0,
+			40.0,
+			50.0,
+			"CHO_DUYET",
+			False,
+		),
+		(
+			IDS["lhp"]["LHP03"],
+			"CNTT201-HK2-2024",
+			IDS["mon_hoc"]["CNTT201"],
+			IDS["hk_2"],
+			gv_map["gv03"],
+			20.0,
+			30.0,
+			50.0,
+			"DANG_NHAP",
+			True,
+		),
+		(
+			IDS["lhp"]["LHP04"],
+			"CNTT202-HK2-2024",
+			IDS["mon_hoc"]["CNTT202"],
+			IDS["hk_2"],
+			gv_map["gv04"],
+			10.0,
+			30.0,
+			60.0,
+			"MO",
+			False,
+		),
+	]
+	for row in lhp_rows:
 		upsert(
 			cursor,
 			"""
 			INSERT INTO lop_hoc_phan (
-				lhp_id, ma_lhp, giang_vien_id, mon_hoc_id, hoc_ky_id,
-				ty_le_cc, ty_le_gk, ty_le_ck, trang_thai_giao_vu, trang_thai_giang_vien
-			) VALUES (%s, %s, %s, %s, %s, 10, 30, 60, 1, 0)
-			ON DUPLICATE KEY UPDATE giang_vien_id = VALUES(giang_vien_id), mon_hoc_id = VALUES(mon_hoc_id)
+				lhp_id, ma_lhp, mon_hoc_id, hoc_ky_id, giang_vien_id,
+				ty_le_cc, ty_le_gk, ty_le_ck, trang_thai, cong_nhap_diem_mo
+			)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			ON DUPLICATE KEY UPDATE
+				mon_hoc_id = VALUES(mon_hoc_id),
+				hoc_ky_id = VALUES(hoc_ky_id),
+				giang_vien_id = VALUES(giang_vien_id),
+				ty_le_cc = VALUES(ty_le_cc),
+				ty_le_gk = VALUES(ty_le_gk),
+				ty_le_ck = VALUES(ty_le_ck),
+				trang_thai = VALUES(trang_thai),
+				cong_nhap_diem_mo = VALUES(cong_nhap_diem_mo)
 			""",
-			(lhp_id, ma_lhp, giang_vien_id, mon_hoc_id, hoc_ky_id),
+			row,
 		)
 
-	for index, student in enumerate(students):
-		lhp_id = LHP_IDS[index % len(LHP_IDS)]
-		mon_hoc_seed = ["PY101", "DB201", "SE202"][index % 3]
-		mon_hoc_id = mon_map.get(mon_hoc_seed, MON_HOC_IDS[index % len(MON_HOC_IDS)])
-		ds_lhp_id = f"27{index + 1:030d}"
-		lich_su_id = f"28{index + 1:030d}"
 
+def insert_or_update_ds_lhp(cursor, ds_lhp_id: str, lhp_id: str, sinh_vien_id: str, diem_cc, diem_gk, diem_ck, diem_tong, trang_thai_diem: str) -> None:
+	upsert(
+		cursor,
+		"""
+		INSERT INTO ds_lhp (
+			ds_lhp_id, lhp_id, sinh_vien_id, diem_cc, diem_gk, diem_ck, diem_tong, trang_thai_diem
+		) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+		ON DUPLICATE KEY UPDATE
+			diem_cc = VALUES(diem_cc),
+			diem_gk = VALUES(diem_gk),
+			diem_ck = VALUES(diem_ck),
+			diem_tong = VALUES(diem_tong),
+			trang_thai_diem = VALUES(trang_thai_diem)
+		""",
+		(ds_lhp_id, lhp_id, sinh_vien_id, diem_cc, diem_gk, diem_ck, diem_tong, trang_thai_diem),
+	)
+
+
+def seed_registrations_and_scores(cursor, students: List[Dict[str, str]]) -> None:
+	first_10 = students[:10]
+	next_10 = students[10:20]
+
+	# LHP01: DA_DUYET, score distribution for BR2-BR5 testing.
+	diem_tong_lhp01 = [
+		9.2,
+		8.8,
+		8.6,
+		8.2,
+		7.9,
+		7.1,
+		6.8,
+		6.0,
+		4.5,
+		3.2,
+	]
+
+	for i, sv in enumerate(first_10, start=1):
+		dt = diem_tong_lhp01[i - 1]
+		cc = round(min(10.0, dt + 0.4), 1)
+		gk = round(min(10.0, dt + 0.2), 1)
+		ck = round(max(0.0, min(10.0, (dt - 0.1))), 1)
+		insert_or_update_ds_lhp(
+			cursor,
+			f"3200000000000000000000000000{i:04d}",
+			IDS["lhp"]["LHP01"],
+			sv["sinh_vien_id"],
+			cc,
+			gk,
+			ck,
+			dt,
+			"DA_DUYET",
+		)
 		upsert(
 			cursor,
 			"""
-			INSERT INTO ds_lhp (ds_lhp_id, lhp_id, sinh_vien_id, diem_cc, diem_gk, diem_ck, diem_tong)
-			VALUES (%s, %s, %s, NULL, NULL, NULL, NULL)
-			ON DUPLICATE KEY UPDATE lhp_id = VALUES(lhp_id)
+			INSERT INTO lich_su_hoc_mon (ls_id, sinh_vien_id, mon_hoc_id, lhp_id, hoc_ky_id, lan_hoc)
+			VALUES (%s, %s, %s, %s, %s, 1)
+			ON DUPLICATE KEY UPDATE lhp_id = VALUES(lhp_id), hoc_ky_id = VALUES(hoc_ky_id)
 			""",
-			(ds_lhp_id, lhp_id, student["sinh_vien_id"]),
+			(
+				f"3300000000000000000000000000{i:04d}",
+				sv["sinh_vien_id"],
+				IDS["mon_hoc"]["CNTT101"],
+				IDS["lhp"]["LHP01"],
+				IDS["hk_2"],
+			),
 		)
 
+	# LHP02: CHO_DUYET, full component scores for 10 students.
+	for i, sv in enumerate(first_10, start=1):
+		cc = round(6.0 + (i % 4) * 0.8, 1)
+		gk = round(5.5 + (i % 5) * 0.7, 1)
+		ck = round(5.0 + (i % 6) * 0.8, 1)
+		insert_or_update_ds_lhp(
+			cursor,
+			f"3400000000000000000000000000{i:04d}",
+			IDS["lhp"]["LHP02"],
+			sv["sinh_vien_id"],
+			cc,
+			gk,
+			ck,
+			None,
+			"CHO_DUYET",
+		)
 		upsert(
 			cursor,
 			"""
-			INSERT INTO lich_su_hoc_mon (lich_su_id, sinh_vien_id, mon_hoc_id, ds_lhp_id, lan_hoc)
-			VALUES (%s, %s, %s, %s, 1)
-			ON DUPLICATE KEY UPDATE ds_lhp_id = VALUES(ds_lhp_id)
+			INSERT INTO lich_su_hoc_mon (ls_id, sinh_vien_id, mon_hoc_id, lhp_id, hoc_ky_id, lan_hoc)
+			VALUES (%s, %s, %s, %s, %s, 1)
+			ON DUPLICATE KEY UPDATE lhp_id = VALUES(lhp_id), hoc_ky_id = VALUES(hoc_ky_id)
 			""",
-			(lich_su_id, student["sinh_vien_id"], mon_hoc_id, ds_lhp_id),
+			(
+				f"3500000000000000000000000000{i:04d}",
+				sv["sinh_vien_id"],
+				IDS["mon_hoc"]["CNTT102"],
+				IDS["lhp"]["LHP02"],
+				IDS["hk_2"],
+			),
+		)
+
+	# LHP03: DANG_NHAP, partial draft for 5/10 students (CC/GK only, CK empty).
+	for i, sv in enumerate(next_10, start=1):
+		if i <= 5:
+			cc = round(6.5 + i * 0.4, 1)
+			gk = round(5.8 + i * 0.5, 1)
+			ck = None
+			trang_thai_diem = "NHAP_NHAP"
+		else:
+			cc = None
+			gk = None
+			ck = None
+			trang_thai_diem = "CHUA_NHAP"
+
+		insert_or_update_ds_lhp(
+			cursor,
+			f"3600000000000000000000000000{i:04d}",
+			IDS["lhp"]["LHP03"],
+			sv["sinh_vien_id"],
+			cc,
+			gk,
+			ck,
+			None,
+			trang_thai_diem,
+		)
+		upsert(
+			cursor,
+			"""
+			INSERT INTO lich_su_hoc_mon (ls_id, sinh_vien_id, mon_hoc_id, lhp_id, hoc_ky_id, lan_hoc)
+			VALUES (%s, %s, %s, %s, %s, 1)
+			ON DUPLICATE KEY UPDATE lhp_id = VALUES(lhp_id), hoc_ky_id = VALUES(hoc_ky_id)
+			""",
+			(
+				f"3700000000000000000000000000{i:04d}",
+				sv["sinh_vien_id"],
+				IDS["mon_hoc"]["CNTT201"],
+				IDS["lhp"]["LHP03"],
+				IDS["hk_2"],
+			),
 		)
 
 
-def main():
+def seed_admin_logs(cursor) -> None:
+	upsert(
+		cursor,
+		"""
+		INSERT INTO admin_log (log_id, tai_khoan_id, hanh_dong, doi_tuong_loai, doi_tuong_id, du_lieu, thoi_diem)
+		VALUES (%s, %s, %s, %s, %s, %s, %s)
+		ON DUPLICATE KEY UPDATE hanh_dong = VALUES(hanh_dong), du_lieu = VALUES(du_lieu)
+		""",
+		(
+			"38000000000000000000000000000001",
+			IDS["tai_khoan"]["admin"],
+			"SEED_INITIAL_DATA",
+			"SYSTEM",
+			"INITIAL",
+			'{"source":"scripts/seed_data.py"}',
+			datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+		),
+	)
+
+
+def main() -> None:
 	conn = get_database_connection()
 	if conn is None:
-		raise RuntimeError("Khong ket noi duoc den CSDL")
+		raise RuntimeError("Khong ket noi duoc CSDL")
 
+	students = build_students()
 	try:
 		with conn.cursor() as cursor:
-			seed_roles(cursor)
-			catalog_info = seed_catalog(cursor)
-			gv_map = seed_lecturers(cursor)
-			students = seed_students(cursor)
-			seed_lhp_and_registrations(
-				cursor,
-				students,
-				gv_map,
-				catalog_info["mon_map"],
-				catalog_info["hoc_ky_id"],
-			)
+			seed_catalog(cursor)
+			gv_map = seed_accounts_and_staff(cursor)
+			seed_students(cursor, students)
+			seed_lhp(cursor, gv_map)
+			seed_registrations_and_scores(cursor, students)
+			seed_admin_logs(cursor)
 
 		conn.commit()
-		print("Seed data thanh cong: 20 sinh vien, 3 LHP, phan cong giang vien va dang ky hoc.")
+		print("Seed data thanh cong: 1 admin, 2 giao vu, 4 giang vien, 20 sinh vien, 4 LHP.")
 	except Exception:
 		conn.rollback()
 		raise

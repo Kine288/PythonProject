@@ -8,64 +8,106 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'ADMIN') {
     exit;
 }
 
-$error = '';
-$notice = '';
-
-$lopRes = sinhVienProxyRequest('GET', '/catalog/lop');
-$lops = $lopRes['data'] ?? [];
-
-if (empty($lops)) {
-    $pdo = getDatabaseConnection();
-    if ($pdo) {
-        $stmt = $pdo->query("SELECT lop_id, ten_lop FROM lop ORDER BY ten_lop ASC");
-        $lops = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
+function newId32(): string
+{
+    return bin2hex(random_bytes(16));
 }
 
-$hasLops = !empty($lops);
+function hashPassword(string $raw): string
+{
+    return hash('sha256', $raw);
+}
 
-$student = [
-    'msv' => '',
-    'ten_sv' => '',
-    'email' => '',
-    'gioi_tinh' => '',
-    'ngay_sinh' => '',
-    'lop_id' => '',
-    'mat_khau' => '123456',
-];
+$pdo = getDatabaseConnection();
+$notice = '';
+$error = '';
+$selectedRole = strtoupper(trim($_POST['role'] ?? 'SINH_VIEN'));
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!$hasLops) {
-        $error = 'Danh sach lop dang rong. Vui long tao lop truoc khi tao tai khoan sinh vien.';
-    }
+$lops = [];
+$khoas = [];
+if ($pdo) {
+    $lops = $pdo->query('SELECT lop_id, ma_lop, ten_lop FROM lop_sinh_hoat ORDER BY ma_lop ASC')->fetchAll(PDO::FETCH_ASSOC);
+    $khoas = $pdo->query('SELECT khoa_id, ma_khoa, ten_khoa FROM khoa_bo_mon ORDER BY ma_khoa ASC')->fetchAll(PDO::FETCH_ASSOC);
+}
 
-    $payload = [
-        'msv' => trim($_POST['msv'] ?? ''),
-        'ten_sv' => trim($_POST['ten_sv'] ?? ''),
-        'email' => trim($_POST['email'] ?? ''),
-        'gioi_tinh' => $_POST['gioi_tinh'] ?? null,
-        'ngay_sinh' => $_POST['ngay_sinh'] ?? null,
-        'lop_id' => $_POST['lop_id'] ?? '',
-        'mat_khau' => trim($_POST['mat_khau'] ?? '123456'),
-    ];
-
-    if ($hasLops) {
-        $res = sinhVienProxyRequest('POST', '/students', $payload);
-
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
+    if ($selectedRole === 'SINH_VIEN') {
+        $payload = [
+            'msv' => trim($_POST['msv'] ?? ''),
+            'ho_ten' => trim($_POST['ho_ten'] ?? ''),
+            'ngay_sinh' => $_POST['ngay_sinh'] ?? null,
+            'gioi_tinh' => $_POST['gioi_tinh'] ?? null,
+            'lop_id' => trim($_POST['lop_id'] ?? ''),
+            'mat_khau' => trim($_POST['mat_khau'] ?? ''),
+            'admin_tai_khoan_id' => $_SESSION['user_id'] ?? '',
+        ];
+        $res = sinhVienProxyRequest('POST', '/sinh-vien', $payload);
         if (!empty($res['success'])) {
-            $notice = $res['message'] ?? 'Tao tai khoan sinh vien thanh cong';
-            $student = [
-                'msv' => '',
-                'ten_sv' => '',
-                'email' => '',
-                'gioi_tinh' => '',
-                'ngay_sinh' => '',
-                'lop_id' => '',
-                'mat_khau' => '123456',
-            ];
+            $notice = 'Tao tai khoan + ho so sinh vien thanh cong.';
         } else {
-            $error = $res['message'] ?? 'Khong the tao tai khoan sinh vien';
-            $student = array_merge($student, $payload);
+            $error = $res['message'] ?? 'Khong the tao sinh vien.';
+        }
+    } else {
+        if (!$pdo) {
+            $error = 'Khong the ket noi CSDL.';
+        } else {
+            $email = trim($_POST['email'] ?? '');
+            $hoTen = trim($_POST['ho_ten'] ?? '');
+            $matKhau = trim($_POST['mat_khau'] ?? '');
+
+            if ($email === '' || $hoTen === '' || $matKhau === '') {
+                $error = 'Vui long nhap day du thong tin bat buoc.';
+            } else {
+                try {
+                    $pdo->beginTransaction();
+                    $taiKhoanId = newId32();
+
+                    $stmt = $pdo->prepare('INSERT INTO tai_khoan (tai_khoan_id, email, mat_khau_hash, vai_tro, is_active) VALUES (:id, :email, :mk, :role, 1)');
+                    $stmt->execute([
+                        'id' => $taiKhoanId,
+                        'email' => $email,
+                        'mk' => hashPassword($matKhau),
+                        'role' => $selectedRole,
+                    ]);
+
+                    if ($selectedRole === 'GIANG_VIEN') {
+                        $gvId = newId32();
+                        $maGv = trim($_POST['ma_gv'] ?? '');
+                        $hocVi = trim($_POST['hoc_vi'] ?? '');
+                        $hocHam = trim($_POST['hoc_ham'] ?? '');
+                        $khoaId = trim($_POST['khoa_id'] ?? '') ?: null;
+                        $soDienThoai = trim($_POST['so_dien_thoai'] ?? '') ?: null;
+
+                        $stmt = $pdo->prepare('INSERT INTO giang_vien (giang_vien_id, tai_khoan_id, ma_gv, ho_ten, hoc_vi, hoc_ham, khoa_id, so_dien_thoai) VALUES (:gv_id, :tk_id, :ma_gv, :ho_ten, :hoc_vi, :hoc_ham, :khoa_id, :sdt)');
+                        $stmt->execute([
+                            'gv_id' => $gvId,
+                            'tk_id' => $taiKhoanId,
+                            'ma_gv' => $maGv,
+                            'ho_ten' => $hoTen,
+                            'hoc_vi' => $hocVi,
+                            'hoc_ham' => $hocHam,
+                            'khoa_id' => $khoaId,
+                            'sdt' => $soDienThoai,
+                        ]);
+                    }
+
+                    $stmt = $pdo->prepare('INSERT INTO admin_log (log_id, tai_khoan_id, hanh_dong, doi_tuong_loai, doi_tuong_id, du_lieu) VALUES (:log_id, :admin_id, :action, :type, :target, :payload)');
+                    $stmt->execute([
+                        'log_id' => newId32(),
+                        'admin_id' => $_SESSION['user_id'] ?? $taiKhoanId,
+                        'action' => 'CREATE_ACCOUNT',
+                        'type' => $selectedRole,
+                        'target' => $taiKhoanId,
+                        'payload' => json_encode(['email' => $email, 'ho_ten' => $hoTen], JSON_UNESCAPED_UNICODE),
+                    ]);
+
+                    $pdo->commit();
+                    $notice = 'Tao tai khoan ' . $selectedRole . ' thanh cong.';
+                } catch (Throwable $th) {
+                    $pdo->rollBack();
+                    $error = 'Khong the tao tai khoan: ' . $th->getMessage();
+                }
+            }
         }
     }
 }
@@ -76,89 +118,148 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Them sinh vien</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <title>Them tai khoan</title>
+    <link rel="stylesheet" href="../../../assets/css/Background.css">
+    <link rel="stylesheet" href="../../../assets/css/components.css">
 </head>
 
-<body class="bg-slate-50 text-slate-800">
+<body>
     <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
-    <main class="ml-64 min-h-screen">
+
+    <div class="app-content">
         <?php include __DIR__ . '/../layouts/header.php'; ?>
 
-        <section class="p-6 space-y-6">
-            <div>
-                <h1 class="text-2xl font-bold">Tao tai khoan sinh vien (Admin)</h1>
-                <p class="text-sm text-slate-500">Theo luong 1: Admin tao tai khoan + ho so sinh vien, Giao vu chi xu ly nghiep vu hoc vu.</p>
+        <div class="app-content-inner">
+            <div class="dashboard-header">
+                <div>
+                    <h1>Them tai khoan moi</h1>
+                    <p class="muted-text">Buoc 1 chon vai tro, buoc 2 nhap thong tin theo vai tro.</p>
+                </div>
             </div>
 
-            <?php if ($notice): ?>
-                <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700"><?php echo htmlspecialchars($notice); ?></div>
+            <?php if ($notice !== ''): ?>
+                <div class="alert-info" style="margin-bottom:12px;"><?php echo htmlspecialchars($notice); ?></div>
             <?php endif; ?>
-            <?php if ($error): ?>
-                <div class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700"><?php echo htmlspecialchars($error); ?></div>
-            <?php endif; ?>
-            <?php if (!$hasLops): ?>
-                <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-700">He thong chua co lop nao. Hay tao lop trong danh muc truoc, sau do quay lai tao sinh vien.</div>
+            <?php if ($error !== ''): ?>
+                <div class="alert-danger" style="margin-bottom:12px;"><?php echo htmlspecialchars($error); ?></div>
             <?php endif; ?>
 
-            <div class="rounded-xl border border-slate-200 bg-white p-5">
-                <form method="post" class="grid gap-4 md:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-sm font-semibold">Ma sinh vien</label>
-                        <input class="w-full rounded-lg border-slate-300" name="msv" required value="<?php echo htmlspecialchars((string)$student['msv']); ?>">
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-sm font-semibold">Ho ten</label>
-                        <input class="w-full rounded-lg border-slate-300" name="ten_sv" required value="<?php echo htmlspecialchars((string)$student['ten_sv']); ?>">
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-sm font-semibold">Email dang nhap</label>
-                        <input class="w-full rounded-lg border-slate-300" type="email" name="email" required value="<?php echo htmlspecialchars((string)$student['email']); ?>">
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-sm font-semibold">Mat khau khoi tao</label>
-                        <input class="w-full rounded-lg border-slate-300" name="mat_khau" value="<?php echo htmlspecialchars((string)$student['mat_khau']); ?>">
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-sm font-semibold">Ngay sinh</label>
-                        <input class="w-full rounded-lg border-slate-300" type="date" name="ngay_sinh" value="<?php echo htmlspecialchars((string)$student['ngay_sinh']); ?>">
-                    </div>
-
-                    <div>
-                        <label class="mb-1 block text-sm font-semibold">Gioi tinh</label>
-                        <select class="w-full rounded-lg border-slate-300" name="gioi_tinh">
-                            <option value="">Khong xac dinh</option>
-                            <option value="1" <?php echo (string)$student['gioi_tinh'] === '1' ? 'selected' : ''; ?>>Nam</option>
-                            <option value="0" <?php echo (string)$student['gioi_tinh'] === '0' ? 'selected' : ''; ?>>Nu</option>
-                        </select>
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="mb-1 block text-sm font-semibold">Lop sinh hoat</label>
-                        <select class="w-full rounded-lg border-slate-300" name="lop_id" <?php echo $hasLops ? 'required' : 'disabled'; ?>>
-                            <option value="">-- Chon lop --</option>
-                            <?php foreach ($lops as $lop): ?>
-                                <option value="<?php echo htmlspecialchars($lop['lop_id']); ?>" <?php echo (string)$student['lop_id'] === (string)$lop['lop_id'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($lop['ten_lop']); ?>
-                                </option>
+            <div class="card">
+                <form method="post" id="form-create-account">
+                    <div class="form-group">
+                        <label>Buoc 1 - Chon vai tro</label>
+                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+                            <?php foreach (['SINH_VIEN', 'GIANG_VIEN', 'GIAO_VU', 'ADMIN'] as $roleOption): ?>
+                                <label style="border:1px solid #e2e8f0;padding:10px;border-radius:10px;cursor:pointer;background:<?php echo $selectedRole === $roleOption ? '#ecfeff' : '#fff'; ?>;">
+                                    <input type="radio" name="role" value="<?php echo $roleOption; ?>" <?php echo $selectedRole === $roleOption ? 'checked' : ''; ?> onchange="document.getElementById('form-create-account').submit();">
+                                    <?php echo $roleOption; ?>
+                                </label>
                             <?php endforeach; ?>
-                        </select>
+                        </div>
                     </div>
 
-                    <div class="md:col-span-2 flex gap-3">
-                        <button type="submit" class="rounded-lg bg-teal-600 px-4 py-2 text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60" <?php echo $hasLops ? '' : 'disabled'; ?>>Tao tai khoan sinh vien</button>
-                        <a href="quan_ly_tai_khoan.php" class="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-100">Quay lai quan ly tai khoan</a>
+                    <?php if ($selectedRole === 'SINH_VIEN'): ?>
+                        <div class="form-group">
+                            <label>Ma sinh vien</label>
+                            <input name="msv" placeholder="VD: 725101001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Ho va ten</label>
+                            <input name="ho_ten" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Lop sinh hoat</label>
+                            <select name="lop_id" required>
+                                <option value="">-- Chon lop --</option>
+                                <?php foreach ($lops as $lop): ?>
+                                    <option value="<?php echo htmlspecialchars($lop['lop_id']); ?>"><?php echo htmlspecialchars($lop['ma_lop'] . ' - ' . $lop['ten_lop']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Ngay sinh</label>
+                            <input type="date" name="ngay_sinh">
+                        </div>
+                        <div class="form-group">
+                            <label>Gioi tinh</label>
+                            <select name="gioi_tinh">
+                                <option value="">-- Chon gioi tinh --</option>
+                                <option value="Nam">Nam</option>
+                                <option value="Nu">Nu</option>
+                                <option value="Khac">Khac</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Mat khau khoi tao</label>
+                            <input name="mat_khau" value="" placeholder="De trong = dung msv">
+                        </div>
+                    <?php elseif ($selectedRole === 'GIANG_VIEN'): ?>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input name="email" type="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Mat khau khoi tao</label>
+                            <input name="mat_khau" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Ma giang vien</label>
+                            <input name="ma_gv" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Ho va ten</label>
+                            <input name="ho_ten" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Hoc vi</label>
+                            <input name="hoc_vi" placeholder="Cu nhan/Thac si/Tien si">
+                        </div>
+                        <div class="form-group">
+                            <label>Hoc ham</label>
+                            <input name="hoc_ham">
+                        </div>
+                        <div class="form-group">
+                            <label>Khoa/Bo mon</label>
+                            <select name="khoa_id">
+                                <option value="">-- Chon khoa --</option>
+                                <?php foreach ($khoas as $khoa): ?>
+                                    <option value="<?php echo htmlspecialchars($khoa['khoa_id']); ?>"><?php echo htmlspecialchars($khoa['ma_khoa'] . ' - ' . $khoa['ten_khoa']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>So dien thoai</label>
+                            <input name="so_dien_thoai">
+                        </div>
+                    <?php else: ?>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input name="email" type="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Mat khau khoi tao</label>
+                            <input name="mat_khau" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Ho va ten</label>
+                            <input name="ho_ten" required>
+                        </div>
+                        <div class="form-group">
+                            <label>So dien thoai</label>
+                            <input name="so_dien_thoai">
+                        </div>
+                    <?php endif; ?>
+
+                    <div style="display:flex;gap:10px;margin-top:8px;">
+                        <button type="submit" class="btn-primary" name="create_account" value="1">Tao tai khoan</button>
+                        <a href="quan_ly_tai_khoan.php" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;">Quay lai</a>
                     </div>
                 </form>
             </div>
-        </section>
+        </div>
 
         <?php include __DIR__ . '/../layouts/footer.php'; ?>
-    </main>
+    </div>
 </body>
 
 </html>

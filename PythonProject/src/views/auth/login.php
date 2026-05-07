@@ -18,9 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error_message = 'Khong the ket noi co so du lieu.';
             } else {
                 $stmt = $pdo->prepare(
-                    'SELECT tk.tai_khoan_id, tk.email, tk.mat_khau, tk.is_active, vt.ten_vai_tro
+                    'SELECT tk.tai_khoan_id, tk.email, tk.mat_khau_hash, tk.is_active, tk.vai_tro
                      FROM tai_khoan tk
-                     JOIN vai_tro vt ON vt.vai_tro_id = tk.vai_tro_id
                      WHERE tk.email = :email
                      LIMIT 1'
                 );
@@ -29,23 +28,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $password_ok = false;
                 if ($user) {
-                    $stored_hash = (string) $user['mat_khau'];
+                    $stored_hash = (string) $user['mat_khau_hash'];
                     if (password_verify($password, $stored_hash)) {
                         $password_ok = true;
                     } else {
+                        $legacy_sha256 = hash('sha256', $password);
                         $hash_is_legacy = (strlen($stored_hash) < 60) || (strpos($stored_hash, '$2y$') !== 0);
-                        $is_placeholder_hash = ($stored_hash === '$2y$10$abcdefghijklmnopqrstuvwxyz');
-                        $placeholder_matches = $is_placeholder_hash && hash_equals($password, '123456');
 
-                        if (($hash_is_legacy && hash_equals($stored_hash, $password)) || $placeholder_matches) {
+                        if (($hash_is_legacy && hash_equals($stored_hash, $password)) || hash_equals($stored_hash, $legacy_sha256)) {
                             $password_ok = true;
 
                             $new_hash = password_hash($password, PASSWORD_BCRYPT);
                             $update_stmt = $pdo->prepare(
-                                'UPDATE tai_khoan SET mat_khau = :mat_khau WHERE tai_khoan_id = :tai_khoan_id'
+                                'UPDATE tai_khoan SET mat_khau_hash = :mat_khau_hash WHERE tai_khoan_id = :tai_khoan_id'
                             );
                             $update_stmt->execute([
-                                'mat_khau' => $new_hash,
+                                'mat_khau_hash' => $new_hash,
                                 'tai_khoan_id' => $user['tai_khoan_id']
                             ]);
                         }
@@ -57,9 +55,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $_SESSION['user_id'] = $user['tai_khoan_id'];
                     $_SESSION['user_email'] = $user['email'];
-                    $_SESSION['user_role'] = $user['ten_vai_tro'];
+                    $_SESSION['user_role'] = $user['vai_tro'];
 
-                    switch ($user['ten_vai_tro']) {
+                    $update_login_stmt = $pdo->prepare(
+                        'UPDATE tai_khoan SET lan_dang_nhap_cuoi = NOW() WHERE tai_khoan_id = :tai_khoan_id'
+                    );
+                    $update_login_stmt->execute([
+                        'tai_khoan_id' => $user['tai_khoan_id']
+                    ]);
+
+                    switch ($user['vai_tro']) {
                         case 'ADMIN':
                             header('Location: ../admin/quan_ly_tai_khoan.php');
                             exit;
@@ -288,7 +293,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .forgot-link {
-            display: inline-block;
             float: right;
             font-size: 13px;
             color: var(--primary-mint);
@@ -334,7 +338,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="password" id="password" name="password" placeholder="Nhập mật khẩu của bạn" required>
                 </div>
 
-                <a href="#" class="forgot-link">Quên mật khẩu?</a>
+                <a href="./doi_mat_khau.php" class="forgot-link">Quen mat khau?</a>
 
                 <button name='btn_dang_nhap' type="submit" class="btn btn-primary">Đăng nhập ngay</button>
             </form>

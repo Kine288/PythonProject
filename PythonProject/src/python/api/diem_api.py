@@ -1,175 +1,109 @@
-import json
-import uuid
-
 from flask import Blueprint, jsonify, request
 
-from config.db_config import get_database_connection
-from services.tinh_diem import (
-    TRANG_THAI_GIANG_VIEN_CHO_DUYET,
-    duyet_va_tinh_diem_lhp,
+from services.diem_service import (
+    danh_sach_yeu_cau_sua,
+    duyet_lhp_va_tinh_diem,
+    gui_duyet_lhp,
+    lay_bang_diem_lhp,
+    luu_nhap_diem_lhp,
+    tao_yeu_cau_sua_diem,
+    tu_choi_lhp,
+    xu_ly_yeu_cau_sua,
 )
 
-diem_bp = Blueprint("diem", __name__)
+
+diem_bp = Blueprint("diem", __name__, url_prefix="/api/diem")
 
 
-def _new_uuid():
-    return uuid.uuid4().hex
-
-
-def _ghi_audit(cursor, ds_lhp_id, nguoi_thay_doi_id, loai_thay_doi, gia_tri_cu, gia_tri_moi):
-    cursor.execute(
-        """
-        INSERT INTO audit_diem
-            (audit_id, ds_lhp_id, nguoi_thay_doi_id, loai_thay_doi,
-             gia_tri_cu, gia_tri_moi)
-        VALUES (%s, %s, %s, %s, %s, %s)
-        """,
-        (
-            _new_uuid(),
-            ds_lhp_id,
-            nguoi_thay_doi_id,
-            loai_thay_doi,
-            json.dumps(gia_tri_cu),
-            json.dumps(gia_tri_moi),
-        ),
-    )
-
-
-def _parse_score(value, field_name):
-    if value is None or value == "":
-        return None
+@diem_bp.get("/lhp/<lhp_id>")
+def get_diem_lhp(lhp_id: str):
     try:
-        parsed = float(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f"{field_name} khong hop le") from exc
-    if not (0 <= parsed <= 10):
-        raise ValueError(f"{field_name} phai trong khoang 0-10")
-    return parsed
+        return jsonify({"success": True, "data": lay_bang_diem_lhp(lhp_id)})
+    except Exception as exc:
+        return jsonify({"success": False, "message": str(exc)}), 500
 
 
-def _cap_nhat_diem(data, loai_thay_doi="NHAP_DIEM"):
-    conn = get_database_connection()
-    if not conn:
-        raise ConnectionError("Khong ket noi duoc database")
-
-    nguoi_thay_doi_id = data.get("nguoi_thay_doi_id")
-    if not nguoi_thay_doi_id:
-        raise ValueError("Thieu nguoi_thay_doi_id")
-
-    diem_cc = _parse_score(data.get("diem_cc"), "diem_cc")
-    diem_gk = _parse_score(data.get("diem_gk"), "diem_gk")
-    diem_ck = _parse_score(data.get("diem_ck"), "diem_ck")
+@diem_bp.put("/lhp/<lhp_id>")
+def put_diem_lhp(lhp_id: str):
+    data = request.get_json(silent=True) or {}
+    tai_khoan_id = (data.get("tai_khoan_id") or "").strip()
+    rows = data.get("rows") or []
+    ly_do = (data.get("ly_do") or "").strip()
 
     try:
-        conn.begin()
-        cursor = conn.cursor()
-
-        cursor.execute(
-            """
-            SELECT ds_lhp_id, diem_cc, diem_gk, diem_ck
-            FROM ds_lhp
-            WHERE ds_lhp_id = %s
-            """,
-            (data["ds_lhp_id"],),
-        )
-        row = cursor.fetchone()
-        if not row:
-            raise ValueError("Khong tim thay bang diem")
-
-        gia_tri_cu = {"diem_cc": row["diem_cc"], "diem_gk": row["diem_gk"], "diem_ck": row["diem_ck"]}
-        gia_tri_moi = {"diem_cc": diem_cc, "diem_gk": diem_gk, "diem_ck": diem_ck}
-
-        cursor.execute(
-            """
-            UPDATE ds_lhp
-            SET diem_cc = %s, diem_gk = %s, diem_ck = %s
-            WHERE ds_lhp_id = %s
-            """,
-            (
-                diem_cc,
-                diem_gk,
-                diem_ck,
-                data["ds_lhp_id"],
-            ),
-        )
-
-        _ghi_audit(
-            cursor,
-            data["ds_lhp_id"],
-            nguoi_thay_doi_id,
-            loai_thay_doi,
-            gia_tri_cu,
-            gia_tri_moi,
-        )
-
-        conn.commit()
-        return {"success": True}
-
-    except Exception as e:
-        conn.rollback()
-        raise e
-    finally:
-        conn.close()
+        result = luu_nhap_diem_lhp(lhp_id, tai_khoan_id, rows, ly_do)
+        return jsonify(result), 200
+    except ValueError as exc:
+        return jsonify({"success": False, "message": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"success": False, "message": str(exc)}), 500
 
 
-@diem_bp.route("/diem/luu-nhap", methods=["POST"])
-def luu_nhap_diem():
-    data = request.get_json() or {}
+@diem_bp.post("/lhp/<lhp_id>/gui-duyet")
+def post_gui_duyet(lhp_id: str):
     try:
-        result = _cap_nhat_diem(data, "LUU_NHAP")
-        return jsonify(result)
-    except ValueError as e:
-        return jsonify({"success": False, "error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(gui_duyet_lhp(lhp_id)), 200
+    except ValueError as exc:
+        return jsonify({"success": False, "message": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"success": False, "message": str(exc)}), 500
 
 
-@diem_bp.route("/diem/nhap", methods=["POST"])
-def nhap_diem():
-    data = request.get_json() or {}
+@diem_bp.post("/lhp/<lhp_id>/duyet")
+def post_duyet(lhp_id: str):
+    data = request.get_json(silent=True) or {}
+    tai_khoan_id = (data.get("tai_khoan_id") or "").strip()
     try:
-        result = _cap_nhat_diem(data, "NHAP_DIEM")
-        return jsonify(result)
-    except ValueError as e:
-        return jsonify({"success": False, "error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify(duyet_lhp_va_tinh_diem(lhp_id, tai_khoan_id)), 200
+    except ValueError as exc:
+        return jsonify({"success": False, "message": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"success": False, "message": str(exc)}), 500
 
 
-@diem_bp.route("/diem/gui-duyet", methods=["POST"])
-def gui_duyet():
-    data = request.get_json() or {}
-    conn = get_database_connection()
-    if not conn:
-        return jsonify({"success": False, "error": "Khong ket noi duoc database"}), 500
+@diem_bp.post("/lhp/<lhp_id>/tu-choi")
+def post_tu_choi(lhp_id: str):
+    try:
+        return jsonify(tu_choi_lhp(lhp_id)), 200
+    except ValueError as exc:
+        return jsonify({"success": False, "message": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"success": False, "message": str(exc)}), 500
+
+
+@diem_bp.post("/yeu-cau-sua")
+def post_yeu_cau_sua():
+    data = request.get_json(silent=True) or {}
+    ds_lhp_id = (data.get("ds_lhp_id") or "").strip()
+    giang_vien_id = (data.get("giang_vien_id") or "").strip()
+    ly_do = (data.get("ly_do") or "").strip()
 
     try:
-        conn.begin()
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            UPDATE lop_hoc_phan
-            SET trang_thai_giang_vien = %s
-            WHERE lhp_id = %s
-            """,
-            (TRANG_THAI_GIANG_VIEN_CHO_DUYET, data.get("lhp_id")),
-        )
-        conn.commit()
-        return jsonify({"success": True})
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"success": False, "error": str(e)}), 500
-    finally:
-        conn.close()
+        return jsonify(tao_yeu_cau_sua_diem(ds_lhp_id, giang_vien_id, ly_do)), 200
+    except ValueError as exc:
+        return jsonify({"success": False, "message": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"success": False, "message": str(exc)}), 500
 
 
-@diem_bp.route("/diem/duyet", methods=["POST"])
-def duyet_diem():
-    data = request.get_json() or {}
+@diem_bp.get("/yeu-cau-sua")
+def get_yeu_cau_sua():
     try:
-        result = duyet_va_tinh_diem_lhp(data["lhp_id"], data["giao_vu_id"])
-        return jsonify(result)
-    except ValueError as e:
-        return jsonify({"success": False, "error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": True, "data": danh_sach_yeu_cau_sua()}), 200
+    except Exception as exc:
+        return jsonify({"success": False, "message": str(exc)}), 500
+
+
+@diem_bp.put("/yeu-cau-sua/<yc_id>")
+def put_yeu_cau_sua(yc_id: str):
+    data = request.get_json(silent=True) or {}
+    giao_vu_id = (data.get("giao_vu_id") or "").strip()
+    chap_thuan = bool(data.get("chap_thuan"))
+    ghi_chu = (data.get("ghi_chu") or "").strip()
+
+    try:
+        return jsonify(xu_ly_yeu_cau_sua(yc_id, giao_vu_id, chap_thuan, ghi_chu)), 200
+    except ValueError as exc:
+        return jsonify({"success": False, "message": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"success": False, "message": str(exc)}), 500

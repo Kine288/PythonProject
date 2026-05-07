@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/../../../../api/sinh_vien.php';
+require_once __DIR__ . '/../../../../config/database.php';
 
 $currentRole = $_SESSION['user_role'] ?? '';
 $isAdmin = $currentRole === 'ADMIN';
@@ -12,15 +13,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['form_action'] ?? '';
     $payload = $_POST;
 
-    if ($action === 'delete_student' && !$isAdmin) {
-        $response = ['success' => false, 'message' => 'Chi Admin duoc xoa tai khoan sinh vien'];
-    } elseif ($action === 'delete_student') {
-        $response = sinhVienProxyRequest('DELETE', '/students/' . ($payload['sinh_vien_id'] ?? ''));
+    if ($action === 'deactivate_student' && !$isAdmin) {
+        $response = ['success' => false, 'message' => 'Chi Admin duoc ngung hoat dong tai khoan'];
+    } elseif ($action === 'deactivate_student') {
+        $svId = $payload['sinh_vien_id'] ?? '';
+        $svRes = sinhVienProxyRequest('GET', '/sinh-vien/' . $svId);
+        if (empty($svRes['success'])) {
+            $response = $svRes;
+        } else {
+            $taiKhoanId = $svRes['data']['tai_khoan_id'] ?? '';
+            $updateRes = sinhVienProxyRequest('PUT', '/sinh-vien/' . $svId, ['trang_thai' => 'THOI_HOC']);
+            if (!empty($updateRes['success']) && $taiKhoanId !== '') {
+                $lockRes = sinhVienProxyRequest('PUT', '/tai-khoan/' . $taiKhoanId . '/khoa');
+                $response = !empty($lockRes['success'])
+                    ? ['success' => true, 'message' => 'Da ngung hoat dong sinh vien va khoa tai khoan']
+                    : $lockRes;
+            } else {
+                $response = $updateRes;
+            }
+        }
     } elseif ($action === 'transfer_class') {
         $response = sinhVienProxyRequest(
-            'POST',
-            '/students/' . ($payload['sinh_vien_id'] ?? '') . '/transfer-class',
-            ['lop_id_moi' => $payload['lop_id_moi'] ?? null]
+            'PUT',
+            '/sinh-vien/' . ($payload['sinh_vien_id'] ?? ''),
+            ['lop_id' => $payload['lop_id_moi'] ?? null]
         );
     } elseif ($action === 'create_lhp') {
         $response = sinhVienProxyRequest('POST', '/lhp', [
@@ -35,19 +51,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'assign_lecturer') {
         $response = sinhVienProxyRequest(
             'PUT',
-            '/lhp/' . ($payload['lhp_id'] ?? '') . '/assign-lecturer',
+            '/lhp/' . ($payload['lhp_id'] ?? ''),
             ['giang_vien_id' => $payload['giang_vien_id'] ?? '']
         );
     } elseif ($action === 'add_student_to_lhp') {
         $response = sinhVienProxyRequest(
             'POST',
-            '/lhp/' . ($payload['lhp_id'] ?? '') . '/students',
+            '/lhp/' . ($payload['lhp_id'] ?? '') . '/sinh-vien',
             ['sinh_vien_id' => $payload['sinh_vien_id'] ?? '']
         );
     } elseif ($action === 'remove_student_from_lhp') {
         $response = sinhVienProxyRequest(
             'DELETE',
-            '/lhp/' . ($payload['lhp_id'] ?? '') . '/students/' . ($payload['sinh_vien_id'] ?? '')
+            '/lhp/' . ($payload['lhp_id'] ?? '') . '/sinh-vien/' . ($payload['sinh_vien_id'] ?? '')
         );
     } else {
         $response = ['success' => false, 'message' => 'Thao tac khong hop le'];
@@ -63,18 +79,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $keyword = trim($_GET['keyword'] ?? '');
 $lopFilter = trim($_GET['lop_id'] ?? '');
 
-$studentsRes = sinhVienProxyRequest('GET', '/students', null, ['keyword' => $keyword, 'lop_id' => $lopFilter]);
-$lopRes = sinhVienProxyRequest('GET', '/catalog/lop');
-$gvRes = sinhVienProxyRequest('GET', '/catalog/giang-vien');
-$monRes = sinhVienProxyRequest('GET', '/catalog/mon-hoc');
-$hocKyRes = sinhVienProxyRequest('GET', '/catalog/hoc-ky');
+$studentsRes = sinhVienProxyRequest('GET', '/sinh-vien', null, ['search' => $keyword, 'lop_id' => $lopFilter]);
 $lhpRes = sinhVienProxyRequest('GET', '/lhp');
 
+$pdo = getDatabaseConnection();
+$lops = [];
+$giangViens = [];
+$monHocs = [];
+$hocKys = [];
+if ($pdo) {
+    $lops = $pdo->query('SELECT lop_id, ma_lop, ten_lop FROM lop_sinh_hoat ORDER BY ma_lop')->fetchAll(PDO::FETCH_ASSOC);
+    $giangViens = $pdo->query('SELECT giang_vien_id, ma_gv, ho_ten FROM giang_vien ORDER BY ma_gv')->fetchAll(PDO::FETCH_ASSOC);
+    $monHocs = $pdo->query('SELECT mon_hoc_id, ma_mon, ten_mon FROM mon_hoc ORDER BY ma_mon')->fetchAll(PDO::FETCH_ASSOC);
+    $hocKys = $pdo->query('SELECT hoc_ky_id, ten_hoc_ky, nam_hoc, ky_hoc FROM hoc_ky ORDER BY nam_hoc DESC, ky_hoc DESC')->fetchAll(PDO::FETCH_ASSOC);
+}
+
 $students = $studentsRes['data'] ?? [];
-$lops = $lopRes['data'] ?? [];
-$giangViens = $gvRes['data'] ?? [];
-$monHocs = $monRes['data'] ?? [];
-$hocKys = $hocKyRes['data'] ?? [];
 $lhps = $lhpRes['data'] ?? [];
 ?>
 <!DOCTYPE html>
@@ -215,11 +235,11 @@ $lhps = $lhpRes['data'] ?? [];
             <h1 class="title">Quan ly sinh vien</h1>
             <?php if ($notice): ?><div class="notice"><?php echo htmlspecialchars($notice); ?></div><?php endif; ?>
             <?php if ($error): ?><div class="error"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
-            <?php if (!$isAdmin): ?><div class="notice">Luu y: Tao/xoa tai khoan sinh vien thuoc vai tro Admin. Giao vu chi cap nhat nghiep vu hoc vu.</div><?php endif; ?>
+            <?php if (!$isAdmin): ?><div class="notice">Luu y: Tao/ngung hoat dong tai khoan sinh vien thuoc vai tro Admin. Giao vu chi cap nhat nghiep vu hoc vu.</div><?php endif; ?>
 
             <form method="get" class="row">
                 <div>
-                    <label>Tim theo ten, msv, email</label>
+                    <label>Tim theo ten hoac msv</label>
                     <input type="text" name="keyword" value="<?php echo htmlspecialchars($keyword); ?>">
                 </div>
                 <div>
@@ -242,7 +262,7 @@ $lhps = $lhpRes['data'] ?? [];
                     <?php if ($isAdmin): ?>
                         <a href="../../admin/them_sinh_vien.php"><button type="button" class="secondary">Them sinh vien</button></a>
                     <?php else: ?>
-                        <button type="button" class="secondary" disabled title="Chi Admin duoc tao tai khoan sinh vien">Them sinh vien (Admin)</button>
+                        <button type="button" class="secondary" disabled>Them sinh vien (Admin)</button>
                     <?php endif; ?>
                 </div>
             </form>
@@ -254,7 +274,7 @@ $lhps = $lhpRes['data'] ?? [];
                     <tr>
                         <th>MSV</th>
                         <th>Ho ten</th>
-                        <th>Email</th>
+                        <th>Tai khoan dang nhap</th>
                         <th>Lop</th>
                         <th>Ngay sinh</th>
                         <th>Thao tac</th>
@@ -269,19 +289,18 @@ $lhps = $lhpRes['data'] ?? [];
                         <?php foreach ($students as $sv): ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($sv['msv']); ?></td>
-                                <td><?php echo htmlspecialchars($sv['ten_sv']); ?></td>
-                                <td><?php echo htmlspecialchars($sv['email']); ?></td>
+                                <td><?php echo htmlspecialchars($sv['ho_ten']); ?></td>
+                                <td><?php echo htmlspecialchars((string)($sv['dang_nhap'] ?? $sv['msv'])); ?></td>
                                 <td><?php echo htmlspecialchars($sv['ten_lop']); ?></td>
                                 <td><?php echo htmlspecialchars((string)($sv['ngay_sinh'] ?? '')); ?></td>
                                 <td>
                                     <div class="actions">
                                         <a href="form.php?id=<?php echo urlencode($sv['sinh_vien_id']); ?>"><button type="button" class="secondary">Sua</button></a>
-
                                         <?php if ($isAdmin): ?>
-                                            <form method="post" class="inline-form" onsubmit="return confirm('Xac nhan xoa sinh vien?');">
-                                                <input type="hidden" name="form_action" value="delete_student">
+                                            <form method="post" class="inline-form" onsubmit="return confirm('Xac nhan ngung hoat dong sinh vien?');">
+                                                <input type="hidden" name="form_action" value="deactivate_student">
                                                 <input type="hidden" name="sinh_vien_id" value="<?php echo htmlspecialchars($sv['sinh_vien_id']); ?>">
-                                                <button type="submit" class="danger">Xoa</button>
+                                                <button type="submit" class="danger">Ngung hoat dong</button>
                                             </form>
                                         <?php endif; ?>
                                     </div>
@@ -320,7 +339,7 @@ $lhps = $lhpRes['data'] ?? [];
                     <label>Hoc ky</label>
                     <select name="hoc_ky_id" required>
                         <?php foreach ($hocKys as $hk): ?>
-                            <option value="<?php echo htmlspecialchars($hk['hoc_ky_id']); ?>"><?php echo htmlspecialchars($hk['ten_hoc_ky']); ?></option>
+                            <option value="<?php echo htmlspecialchars($hk['hoc_ky_id']); ?>"><?php echo htmlspecialchars($hk['ten_hoc_ky'] . ' (' . $hk['nam_hoc'] . ' - Ky ' . $hk['ky_hoc'] . ')'); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -328,7 +347,7 @@ $lhps = $lhpRes['data'] ?? [];
                     <label>Giang vien</label>
                     <select name="giang_vien_id" required>
                         <?php foreach ($giangViens as $gv): ?>
-                            <option value="<?php echo htmlspecialchars($gv['giang_vien_id']); ?>"><?php echo htmlspecialchars($gv['ma_gv'] . ' - ' . $gv['ten_gv']); ?></option>
+                            <option value="<?php echo htmlspecialchars($gv['giang_vien_id']); ?>"><?php echo htmlspecialchars($gv['ma_gv'] . ' - ' . $gv['ho_ten']); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -347,7 +366,7 @@ $lhps = $lhpRes['data'] ?? [];
                     <label>Lop hoc phan</label>
                     <select name="lhp_id" required>
                         <?php foreach ($lhps as $lhp): ?>
-                            <option value="<?php echo htmlspecialchars($lhp['lhp_id']); ?>"><?php echo htmlspecialchars($lhp['ma_lhp'] . ' - ' . $lhp['ten_mon']); ?></option>
+                            <option value="<?php echo htmlspecialchars($lhp['lhp_id']); ?>"><?php echo htmlspecialchars($lhp['ma_lhp'] . ' - ' . ($lhp['ten_mon'] ?? '')); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -355,7 +374,7 @@ $lhps = $lhpRes['data'] ?? [];
                     <label>Giang vien</label>
                     <select name="giang_vien_id" required>
                         <?php foreach ($giangViens as $gv): ?>
-                            <option value="<?php echo htmlspecialchars($gv['giang_vien_id']); ?>"><?php echo htmlspecialchars($gv['ma_gv'] . ' - ' . $gv['ten_gv']); ?></option>
+                            <option value="<?php echo htmlspecialchars($gv['giang_vien_id']); ?>"><?php echo htmlspecialchars($gv['ma_gv'] . ' - ' . $gv['ho_ten']); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -377,7 +396,7 @@ $lhps = $lhpRes['data'] ?? [];
                     <label style="margin-top:8px;">Sinh vien</label>
                     <select name="sinh_vien_id" required>
                         <?php foreach ($students as $sv): ?>
-                            <option value="<?php echo htmlspecialchars($sv['sinh_vien_id']); ?>"><?php echo htmlspecialchars($sv['msv'] . ' - ' . $sv['ten_sv']); ?></option>
+                            <option value="<?php echo htmlspecialchars($sv['sinh_vien_id']); ?>"><?php echo htmlspecialchars($sv['msv'] . ' - ' . $sv['ho_ten']); ?></option>
                         <?php endforeach; ?>
                     </select>
                     <button type="submit" style="margin-top:10px;">Them vao LHP</button>
@@ -394,7 +413,7 @@ $lhps = $lhpRes['data'] ?? [];
                     <label style="margin-top:8px;">Sinh vien</label>
                     <select name="sinh_vien_id" required>
                         <?php foreach ($students as $sv): ?>
-                            <option value="<?php echo htmlspecialchars($sv['sinh_vien_id']); ?>"><?php echo htmlspecialchars($sv['msv'] . ' - ' . $sv['ten_sv']); ?></option>
+                            <option value="<?php echo htmlspecialchars($sv['sinh_vien_id']); ?>"><?php echo htmlspecialchars($sv['msv'] . ' - ' . $sv['ho_ten']); ?></option>
                         <?php endforeach; ?>
                     </select>
                     <button type="submit" class="danger" style="margin-top:10px;">Xoa khoi LHP</button>
@@ -414,8 +433,8 @@ $lhps = $lhpRes['data'] ?? [];
                             <?php foreach ($lhps as $lhp): ?>
                                 <tr>
                                     <td><?php echo htmlspecialchars($lhp['ma_lhp']); ?></td>
-                                    <td><?php echo htmlspecialchars($lhp['ten_mon']); ?></td>
-                                    <td><?php echo htmlspecialchars((string)$lhp['so_luong_sv']); ?></td>
+                                    <td><?php echo htmlspecialchars((string)($lhp['ten_mon'] ?? '')); ?></td>
+                                    <td><?php echo htmlspecialchars((string)($lhp['so_sv'] ?? 0)); ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

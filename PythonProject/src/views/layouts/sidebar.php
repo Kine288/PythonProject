@@ -7,22 +7,28 @@ $userRole = $_SESSION['user_role'] ?? 'GUEST';
 
 $menuByRole = [
     'ADMIN' => [
+        ['label' => 'Tong quan he thong', 'icon' => 'dashboard', 'href' => '/PythonProject/PythonProject/src/views/admin/dashboard.php'],
         ['label' => 'Quan ly tai khoan', 'icon' => 'manage_accounts', 'href' => '/PythonProject/PythonProject/src/views/admin/quan_ly_tai_khoan.php'],
-        ['label' => 'Them sinh vien', 'icon' => 'person_add', 'href' => '/PythonProject/PythonProject/src/views/admin/them_sinh_vien.php'],
-        ['label' => 'Hoc vu tong quan', 'icon' => 'school', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/sinh_vien/danh_sach.php'],
+        ['label' => 'Log he thong', 'icon' => 'receipt_long', 'href' => '/PythonProject/PythonProject/src/views/admin/log_he_thong.php'],
     ],
     'GIAO_VU' => [
-        ['label' => 'Quan ly Sinh vien', 'icon' => 'group', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/sinh_vien/danh_sach.php'],
+        ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/dashboard.php'],
+        ['label' => 'Danh muc co so', 'icon' => 'folder_open', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/danh_muc.php'],
+        ['label' => 'Sinh vien', 'icon' => 'group', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/sinh_vien/danh_sach.php'],
         ['label' => 'Lop hoc phan', 'icon' => 'class', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/duyet_diem.php'],
+        ['label' => 'Duyet diem', 'icon' => 'fact_check', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/duyet_diem.php'],
         ['label' => 'Tong ket hoc vu', 'icon' => 'analytics', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/tong_ket_hoc_vu.php'],
-        ['label' => 'Tong hop LHP', 'icon' => 'table_chart', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/ket_qua_tong_hop.php'],
-        ['label' => 'Bao cao canh bao', 'icon' => 'warning', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/bao_cao/canh_bao.php'],
+        ['label' => 'Bao cao', 'icon' => 'summarize', 'href' => '/PythonProject/PythonProject/src/views/giao_vu/bao_cao/canh_bao.php'],
     ],
     'GIANG_VIEN' => [
-        ['label' => 'Lop hoc phan', 'icon' => 'class', 'href' => '/PythonProject/PythonProject/src/views/giang_vien/lop_hoc_phan.php'],
+        ['label' => 'Lop phu trach', 'icon' => 'class', 'href' => '/PythonProject/PythonProject/src/views/giang_vien/lop_hoc_phan.php'],
+        ['label' => 'Nhap diem', 'icon' => 'edit_note', 'href' => '/PythonProject/PythonProject/src/views/giang_vien/nhap_diem.php'],
+        ['label' => 'Yeu cau sua diem', 'icon' => 'request_quote', 'href' => '/PythonProject/PythonProject/src/views/giang_vien/yeu_cau_sua_diem.php'],
     ],
     'SINH_VIEN' => [
-        ['label' => 'Bang diem ca nhan', 'icon' => 'menu_book', 'href' => '/PythonProject/PythonProject/src/views/sinh_vien/bang_diem.php'],
+        ['label' => 'Thong tin ca nhan', 'icon' => 'person', 'href' => '/PythonProject/PythonProject/src/views/sinh_vien/thong_tin.php'],
+        ['label' => 'Bang diem', 'icon' => 'menu_book', 'href' => '/PythonProject/PythonProject/src/views/sinh_vien/bang_diem.php'],
+        ['label' => 'Xuat phieu diem', 'icon' => 'picture_as_pdf', 'href' => '/PythonProject/PythonProject/src/views/sinh_vien/xuat_phieu_diem.php'],
     ],
 ];
 
@@ -46,37 +52,39 @@ function sidebarRoleLabel(string $role): string
     return 'Truy cap he thong';
 }
 ?>
-<aside class="h-screen w-64 border-r fixed left-0 top-0 bg-white border-slate-100 shadow-[4px_0_24px_rgba(0,184,148,0.04)] z-50 flex flex-col h-full p-4 space-y-2">
-    <div class="mb-8 px-2 flex items-center gap-3">
-        <div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center">
-            <span class="material-symbols-outlined text-white" data-icon="school">school</span>
-        </div>
-        <div>
-            <h2 class="text-lg font-bold text-slate-900 font-display-md leading-tight">Hoc vien Giao duc</h2>
-            <p class="text-[11px] text-slate-500 uppercase tracking-wider font-semibold"><?php echo htmlspecialchars(sidebarRoleLabel($userRole)); ?></p>
+<aside class="app-sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-icon">SV</div>
+        <div class="brand-text">
+            <span class="brand-title">QL Sinh Vien</span>
+            <span class="brand-subtitle"><?php echo htmlspecialchars(sidebarRoleLabel($userRole)); ?></span>
         </div>
     </div>
 
-    <nav class="flex-1 space-y-1">
+    <nav class="sidebar-nav">
         <?php if (empty($menuItems)): ?>
-            <div class="px-3 py-2 text-sm text-slate-400">Khong co menu phu hop vai tro hien tai.</div>
+            <div class="muted-text">Khong co menu phu hop vai tro hien tai.</div>
         <?php endif; ?>
         <?php foreach ($menuItems as $item): ?>
             <?php $isActive = strpos($currentPath, $item['href']) !== false; ?>
-            <a class="flex items-center gap-3 px-3 py-2 <?php echo $isActive ? 'bg-teal-50 text-teal-600 font-semibold' : 'text-slate-600 hover:text-teal-500 hover:bg-slate-50'; ?> rounded-lg transition-all duration-200 scale-100 active:scale-95 origin-left font-['Manrope'] text-sm" href="<?php echo htmlspecialchars($item['href']); ?>">
-                <span class="material-symbols-outlined" data-icon="<?php echo htmlspecialchars($item['icon']); ?>"><?php echo htmlspecialchars($item['icon']); ?></span>
+            <a class="nav-link <?php echo $isActive ? 'active' : ''; ?>" href="<?php echo htmlspecialchars($item['href']); ?>">
+                <span class="material-symbols-outlined"><?php echo htmlspecialchars($item['icon']); ?></span>
                 <span><?php echo htmlspecialchars($item['label']); ?></span>
             </a>
         <?php endforeach; ?>
     </nav>
 
-    <div class="pt-4 border-t border-slate-100 space-y-1">
-        <button class="w-full text-left flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg transition-all font-['Manrope'] text-sm" type="button">
-            <span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
-            <span>Huong dan</span>
+    <div class="sidebar-footer">
+        <button class="support-button" type="button">
+            <span class="material-symbols-outlined">help</span>
+            <span>Tro giup</span>
         </button>
-        <a class="w-full text-left flex items-center gap-3 px-3 py-2 text-error hover:bg-error-container/20 rounded-lg transition-all font-['Manrope'] text-sm" href="/PythonProject/PythonProject/src/views/auth/login.php">
-            <span class="material-symbols-outlined" data-icon="logout">logout</span>
+        <a class="account-button" href="/PythonProject/PythonProject/src/views/auth/doi_mat_khau.php">
+            <span class="material-symbols-outlined">lock_reset</span>
+            <span>Doi mat khau</span>
+        </a>
+        <a class="logout-button" href="/PythonProject/PythonProject/src/views/auth/logout.php">
+            <span class="material-symbols-outlined">logout</span>
             <span>Dang xuat</span>
         </a>
     </div>

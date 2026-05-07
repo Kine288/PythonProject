@@ -37,12 +37,12 @@ if (!$pdo) {
         $page_error = 'Lop hoc phan khong ton tai hoac khong thuoc giang vien hien tai.';
       } else {
         $stmt = $pdo->prepare("
-          SELECT sv.sinh_vien_id, sv.msv, sv.ten_sv,
+          SELECT sv.sinh_vien_id, sv.msv, sv.ho_ten,
                d.ds_lhp_id, d.diem_cc, d.diem_gk, d.diem_ck
           FROM ds_lhp d
           JOIN sinh_vien sv ON sv.sinh_vien_id = d.sinh_vien_id
           WHERE d.lhp_id = ?
-          ORDER BY sv.ten_sv
+          ORDER BY sv.ho_ten
         ");
         $stmt->execute([$lhp_id]);
         $ds_sinh_vien = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -262,7 +262,7 @@ if (!$pdo) {
             <?php foreach ($ds_sinh_vien as $sv): ?>
               <tr class="hover:bg-slate-50/50 transition-colors group" data-id="<?php echo htmlspecialchars($sv['ds_lhp_id']); ?>">
                 <td class="px-6 py-4 font-medium text-primary"><?php echo htmlspecialchars($sv['msv']); ?></td>
-                <td class="px-6 py-4 text-slate-600"><?php echo htmlspecialchars($sv['ten_sv']); ?></td>
+                <td class="px-6 py-4 text-slate-600"><?php echo htmlspecialchars($sv['ho_ten']); ?></td>
                 <td class="px-6 py-4">
                   <input type="number" min="0" max="10" step="0.1" class="diem-cc w-24 h-9 border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md" value="<?php echo htmlspecialchars($sv['diem_cc']); ?>">
                 </td>
@@ -295,16 +295,17 @@ if (!$pdo) {
       btn.addEventListener('click', function() {
         const row = this.closest('tr');
         const payload = {
-          ds_lhp_id: row.dataset.id,
-          lhp_id: this.dataset.lhp,
-          nguoi_thay_doi_id: '<?php echo htmlspecialchars($tai_khoan_id); ?>',
-          diem_cc: parseFloat(row.querySelector('.diem-cc').value || 0),
-          diem_gk: parseFloat(row.querySelector('.diem-gk').value || 0),
-          diem_ck: parseFloat(row.querySelector('.diem-ck').value || 0),
+          tai_khoan_id: '<?php echo htmlspecialchars($tai_khoan_id); ?>',
+          rows: [{
+            ds_lhp_id: row.dataset.id,
+            diem_cc: parseFloat(row.querySelector('.diem-cc').value || 0),
+            diem_gk: parseFloat(row.querySelector('.diem-gk').value || 0),
+            diem_ck: parseFloat(row.querySelector('.diem-ck').value || 0)
+          }]
         };
 
-        fetch(`${PY_API}/diem/luu-nhap`, {
-            method: 'POST',
+        fetch(`${PY_API}/api/diem/lhp/${encodeURIComponent(this.dataset.lhp)}`, {
+            method: 'PUT',
             headers: {
               'Content-Type': 'application/json'
             },
@@ -315,7 +316,7 @@ if (!$pdo) {
             if (res.success) {
               alert('Da luu');
             } else {
-              alert('Loi: ' + res.error);
+              alert('Loi: ' + (res.message || 'Khong the luu diem'));
             }
           });
       });
@@ -323,21 +324,18 @@ if (!$pdo) {
 
     document.getElementById('btn-gui-duyet').addEventListener('click', function() {
       if (!confirm('Gui duyet toan bo LHP nay?')) return;
-      fetch(`${PY_API}/diem/gui-duyet`, {
+      fetch(`${PY_API}/api/diem/lhp/${encodeURIComponent(this.dataset.lhp)}/gui-duyet`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            lhp_id: this.dataset.lhp
-          })
+          }
         })
         .then(r => r.json())
         .then(res => {
           if (res.success) {
             alert('Da gui duyet');
           } else {
-            alert('Loi: ' + res.error);
+            alert('Loi: ' + (res.message || 'Khong the gui duyet'));
           }
         });
     });

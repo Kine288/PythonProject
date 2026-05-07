@@ -41,6 +41,7 @@ def api_ds_canh_bao():
 
 
 @bao_cao_bp.get("/thong-ke-xep-loai")
+@bao_cao_bp.get("/xep-loai-khoa")
 def api_thong_ke_xep_loai():
     hoc_ky_id = (request.args.get("hoc_ky_id") or "").strip()
     if not hoc_ky_id:
@@ -54,10 +55,11 @@ def api_thong_ke_xep_loai():
 
 
 @bao_cao_bp.post("/export/canh-bao-excel")
-def api_export_canh_bao_excel():
+@bao_cao_bp.get("/canh-bao-excel/<hoc_ky_id>")
+def api_export_canh_bao_excel(hoc_ky_id: str = ""):
     payload = request.get_json(silent=True) or {}
-    hoc_ky_id = (payload.get("hoc_ky_id") or "").strip()
-    muc = payload.get("muc_canh_bao")
+    hoc_ky_id = hoc_ky_id or (payload.get("hoc_ky_id") or request.args.get("hoc_ky_id") or "").strip()
+    muc = payload.get("muc_canh_bao", request.args.get("muc_canh_bao"))
 
     if not hoc_ky_id:
         return _error("Thieu hoc_ky_id")
@@ -83,9 +85,10 @@ def api_export_canh_bao_excel():
 
 
 @bao_cao_bp.post("/export/bang-diem-pdf")
-def api_export_bang_diem_pdf():
+@bao_cao_bp.get("/bang-diem-pdf/<sinh_vien_id>")
+def api_export_bang_diem_pdf(sinh_vien_id: str = ""):
     payload = request.get_json(silent=True) or {}
-    sinh_vien_id = (payload.get("sinh_vien_id") or "").strip()
+    sinh_vien_id = sinh_vien_id or (payload.get("sinh_vien_id") or request.args.get("sinh_vien_id") or "").strip()
 
     if not sinh_vien_id:
         return _error("Thieu sinh_vien_id")

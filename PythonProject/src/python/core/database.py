@@ -1,6 +1,7 @@
 """Database helpers shared by Python services."""
 
 from contextlib import contextmanager
+from typing import Any, Callable
 
 from config.db_config import get_database_connection
 
@@ -38,6 +39,22 @@ def db_transaction():
 		with conn.cursor() as cursor:
 			yield conn, cursor
 		conn.commit()
+	except Exception:
+		conn.rollback()
+		raise
+	finally:
+		conn.close()
+
+
+def execute_transaction(callback: Callable[[Any], Any]) -> Any:
+	"""Execute callback(cursor) in one transaction and return callback result."""
+	conn = get_connection()
+	try:
+		conn.begin()
+		with conn.cursor() as cursor:
+			result = callback(cursor)
+		conn.commit()
+		return result
 	except Exception:
 		conn.rollback()
 		raise

@@ -8,7 +8,7 @@ $hoc_kys = [];
 $selected_hoc_ky_id = $_GET['hoc_ky_id'] ?? '';
 
 if ($pdo) {
-    $stmt = $pdo->query("SELECT hoc_ky_id, ma_hoc_ky, ten_hoc_ky, is_hien_tai FROM hoc_ky ORDER BY ten_hoc_ky DESC");
+    $stmt = $pdo->query("SELECT hoc_ky_id, ten_hoc_ky, nam_hoc, ky_hoc, is_hien_tai FROM hoc_ky ORDER BY nam_hoc DESC, ky_hoc DESC");
     $hoc_kys = $stmt->fetchAll(PDO::FETCH_ASSOC);
     if (!$selected_hoc_ky_id && !empty($hoc_kys)) {
         $selected_hoc_ky_id = $hoc_kys[0]['hoc_ky_id'];
@@ -42,7 +42,7 @@ if ($pdo) {
                     <select id="hoc-ky-id" class="w-full rounded-lg border-slate-300">
                         <?php foreach ($hoc_kys as $hk): ?>
                             <option value="<?php echo htmlspecialchars($hk['hoc_ky_id']); ?>" <?php echo $selected_hoc_ky_id === $hk['hoc_ky_id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($hk['ma_hoc_ky'] . ' - ' . $hk['ten_hoc_ky']); ?>
+                                <?php echo htmlspecialchars($hk['ten_hoc_ky'] . ' (' . $hk['nam_hoc'] . ' - Ky ' . $hk['ky_hoc'] . ')'); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -112,7 +112,7 @@ if ($pdo) {
 
         async function loadWarnings() {
             const hocKyId = hocKyEl.value;
-            const res = await fetch(`${PY_API}/api/gpa/warnings?hoc_ky_id=${encodeURIComponent(hocKyId)}`);
+            const res = await fetch(`${PY_API}/api/gpa/canh-bao/${encodeURIComponent(hocKyId)}`);
             const data = await res.json();
 
             if (!data.success) {
@@ -125,8 +125,8 @@ if ($pdo) {
                 tr.className = 'border-t border-slate-100';
                 tr.innerHTML = `
             <td class="px-4 py-2">${item.msv || ''}</td>
-            <td class="px-4 py-2">${item.ten_sv || ''}</td>
-            <td class="px-4 py-2">${item.gpa_tich_luy_he_4 ?? ''}</td>
+            <td class="px-4 py-2">${item.ho_ten || ''}</td>
+            <td class="px-4 py-2">${item.gpa_tich_luy_he4 ?? ''}</td>
             <td class="px-4 py-2">${item.xep_loai || ''}</td>
             <td class="px-4 py-2">${item.muc_canh_bao ?? 0}</td>
         `;
@@ -139,14 +139,8 @@ if ($pdo) {
         document.getElementById('btn-recalculate').addEventListener('click', async () => {
             try {
                 const hocKyId = hocKyEl.value;
-                const res = await fetch(`${PY_API}/api/gpa/recalculate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        hoc_ky_id: hocKyId
-                    })
+                const res = await fetch(`${PY_API}/api/gpa/tinh-hoc-ky/${encodeURIComponent(hocKyId)}`, {
+                    method: 'POST'
                 });
                 const data = await res.json();
                 if (!data.success) {
@@ -175,7 +169,7 @@ if ($pdo) {
                     throw new Error('Vui long nhap sinh_vien_id');
                 }
                 const hocKyId = hocKyEl.value;
-                const url = `${PY_API}/api/gpa/students/${encodeURIComponent(svId)}?hoc_ky_id=${encodeURIComponent(hocKyId)}`;
+                const url = `${PY_API}/api/gpa/ket-qua/${encodeURIComponent(svId)}?hoc_ky_id=${encodeURIComponent(hocKyId)}`;
                 const res = await fetch(url);
                 const data = await res.json();
                 if (!data.success) {

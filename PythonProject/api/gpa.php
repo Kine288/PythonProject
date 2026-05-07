@@ -45,36 +45,24 @@ function gpaProxyRequest(string $method, string $path, ?array $payload = null, a
 
 switch ($action) {
     case 'recalculate':
-        $response = gpaProxyRequest('POST', '/recalculate', [
-            'hoc_ky_id' => $input['hoc_ky_id'] ?? '',
-            'sinh_vien_id' => $input['sinh_vien_id'] ?? '',
-        ]);
+        $hocKyId = $input['hoc_ky_id'] ?? ($_GET['hoc_ky_id'] ?? '');
+        $response = gpaProxyRequest('POST', '/tinh-hoc-ky/' . $hocKyId);
         break;
 
     case 'student_result':
         $sinhVienId = $_GET['sinh_vien_id'] ?? ($input['sinh_vien_id'] ?? '');
         $hocKyId = $_GET['hoc_ky_id'] ?? ($input['hoc_ky_id'] ?? '');
-        $response = gpaProxyRequest('GET', '/students/' . $sinhVienId, null, ['hoc_ky_id' => $hocKyId]);
+        $response = gpaProxyRequest('GET', '/ket-qua/' . $sinhVienId, null, ['hoc_ky_id' => $hocKyId]);
         break;
 
     case 'warnings':
         $hocKyId = $_GET['hoc_ky_id'] ?? ($input['hoc_ky_id'] ?? '');
-        $response = gpaProxyRequest('GET', '/warnings', null, ['hoc_ky_id' => $hocKyId]);
+        $response = gpaProxyRequest('GET', '/canh-bao/' . $hocKyId);
         break;
 
     case 'transcript':
-        $sinhVienId = $_GET['sinh_vien_id'] ?? ($input['sinh_vien_id'] ?? '');
-        $hocKyId = $_GET['hoc_ky_id'] ?? ($input['hoc_ky_id'] ?? '');
-        $query = [];
-        if ($hocKyId !== '') {
-            $query['hoc_ky_id'] = $hocKyId;
-        }
-        $response = gpaProxyRequest('GET', '/transcript/' . $sinhVienId, null, $query);
-        break;
-
     case 'lhp_summary':
-        $lhpId = $_GET['lhp_id'] ?? ($input['lhp_id'] ?? '');
-        $response = gpaProxyRequest('GET', '/summary/lhp/' . $lhpId);
+        $response = ['success' => false, 'message' => 'Action khong con ho tro trong API moi', 'status' => 400];
         break;
 
     default:

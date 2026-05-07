@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/../../../../api/sinh_vien.php';
+require_once __DIR__ . '/../../../../config/database.php';
 
 $currentRole = $_SESSION['user_role'] ?? '';
 $isAdmin = $currentRole === 'ADMIN';
@@ -19,21 +20,25 @@ if (!$isAdmin && !$isEdit) {
     $error = 'Chi Admin duoc tao moi tai khoan sinh vien.';
 }
 
-$lopRes = sinhVienProxyRequest('GET', '/catalog/lop');
-$lops = $lopRes['data'] ?? [];
+$pdo = getDatabaseConnection();
+$lops = [];
+if ($pdo) {
+    $lops = $pdo->query('SELECT lop_id, ma_lop, ten_lop FROM lop_sinh_hoat ORDER BY ma_lop')->fetchAll(PDO::FETCH_ASSOC);
+}
 
 $student = [
     'sinh_vien_id' => '',
     'msv' => '',
-    'ten_sv' => '',
-    'email' => '',
+    'ho_ten' => '',
+    'dang_nhap' => '',
     'gioi_tinh' => '',
     'ngay_sinh' => '',
     'lop_id' => '',
+    'trang_thai' => 'DANG_HOC',
 ];
 
 if ($isEdit) {
-    $res = sinhVienProxyRequest('GET', '/students/' . $sinhVienId);
+    $res = sinhVienProxyRequest('GET', '/sinh-vien/' . $sinhVienId);
     if (!empty($res['success'])) {
         $student = array_merge($student, $res['data'] ?? []);
         if (!empty($student['ngay_sinh'])) {
@@ -48,20 +53,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$isAdmin && !$isEdit) {
         $error = 'Chi Admin duoc tao moi tai khoan sinh vien.';
     } else {
-        $payload = [
-            'msv' => trim($_POST['msv'] ?? ''),
-            'ten_sv' => trim($_POST['ten_sv'] ?? ''),
-            'email' => trim($_POST['email'] ?? ''),
-            'gioi_tinh' => $_POST['gioi_tinh'] ?? null,
-            'ngay_sinh' => $_POST['ngay_sinh'] ?? null,
-            'lop_id' => $_POST['lop_id'] ?? '',
-        ];
-
         if ($isEdit) {
-            $res = sinhVienProxyRequest('PUT', '/students/' . $sinhVienId, $payload);
+            $payload = [
+                'lop_id' => $_POST['lop_id'] ?? '',
+                'trang_thai' => $_POST['trang_thai'] ?? 'DANG_HOC',
+                'nguoi_thay_doi' => (string)($_SESSION['user_id'] ?? ''),
+            ];
+            $res = sinhVienProxyRequest('PUT', '/sinh-vien/' . $sinhVienId, $payload);
         } else {
-            $payload['mat_khau'] = trim($_POST['mat_khau'] ?? '123456');
-            $res = sinhVienProxyRequest('POST', '/students', $payload);
+            $payload = [
+                'msv' => trim($_POST['msv'] ?? ''),
+                'ho_ten' => trim($_POST['ho_ten'] ?? ''),
+                'gioi_tinh' => $_POST['gioi_tinh'] ?? null,
+                'ngay_sinh' => $_POST['ngay_sinh'] ?? null,
+                'lop_id' => $_POST['lop_id'] ?? '',
+                'mat_khau' => trim($_POST['mat_khau'] ?? ''),
+                'admin_tai_khoan_id' => (string)($_SESSION['user_id'] ?? ''),
+            ];
+            $res = sinhVienProxyRequest('POST', '/sinh-vien', $payload);
         }
 
         if (!empty($res['success'])) {
@@ -70,7 +79,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $error = $res['message'] ?? 'Khong the luu sinh vien';
-        $student = array_merge($student, $payload);
     }
 }
 ?>
@@ -80,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $isEdit ? 'Sua sinh vien' : 'Them sinh vien'; ?></title>
+    <title><?php echo $isEdit ? 'Cap nhat sinh vien' : 'Them sinh vien'; ?></title>
     <style>
         body {
             margin: 0;
@@ -90,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .wrap {
-            max-width: 680px;
+            max-width: 720px;
             margin: 26px auto;
             padding: 20px;
         }
@@ -127,6 +135,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 8px;
             border: 1px solid #d3dde7;
             box-sizing: border-box;
+        }
+
+        input[readonly] {
+            background: #f8fafc;
+            color: #64748b;
         }
 
         button {
@@ -176,33 +189,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="wrap">
         <div class="card">
-            <h2 class="title"><?php echo $isEdit ? 'Cap nhat sinh vien' : 'Them moi sinh vien'; ?></h2>
+            <h2 class="title"><?php echo $isEdit ? 'Cap nhat nghiep vu sinh vien' : 'Them moi sinh vien'; ?></h2>
             <?php if ($error): ?><div class="error"><?php echo htmlspecialchars($error); ?></div><?php endif; ?>
 
             <form method="post">
                 <div class="row">
                     <div>
                         <label>Ma sinh vien</label>
-                        <input name="msv" required value="<?php echo htmlspecialchars((string)$student['msv']); ?>">
+                        <input name="msv" required value="<?php echo htmlspecialchars((string)$student['msv']); ?>" <?php echo $isEdit ? 'readonly' : ''; ?>>
                     </div>
                     <div>
                         <label>Ho ten</label>
-                        <input name="ten_sv" required value="<?php echo htmlspecialchars((string)$student['ten_sv']); ?>">
+                        <input name="ho_ten" required value="<?php echo htmlspecialchars((string)$student['ho_ten']); ?>" <?php echo $isEdit ? 'readonly' : ''; ?>>
                     </div>
                     <div>
-                        <label>Email</label>
-                        <input type="email" name="email" required value="<?php echo htmlspecialchars((string)$student['email']); ?>">
+                        <label>Tai khoan dang nhap</label>
+                        <input value="<?php echo htmlspecialchars((string)($student['dang_nhap'] ?: $student['msv'])); ?>" readonly>
                     </div>
                     <div>
                         <label>Ngay sinh</label>
-                        <input type="date" name="ngay_sinh" value="<?php echo htmlspecialchars((string)$student['ngay_sinh']); ?>">
+                        <input type="date" name="ngay_sinh" value="<?php echo htmlspecialchars((string)$student['ngay_sinh']); ?>" <?php echo $isEdit ? 'readonly' : ''; ?>>
                     </div>
                     <div>
                         <label>Gioi tinh</label>
-                        <select name="gioi_tinh">
+                        <select name="gioi_tinh" <?php echo $isEdit ? 'disabled' : ''; ?>>
                             <option value="">Khong xac dinh</option>
-                            <option value="1" <?php echo (string)$student['gioi_tinh'] === '1' ? 'selected' : ''; ?>>Nam</option>
-                            <option value="0" <?php echo (string)$student['gioi_tinh'] === '0' ? 'selected' : ''; ?>>Nu</option>
+                            <option value="Nam" <?php echo (string)$student['gioi_tinh'] === 'Nam' ? 'selected' : ''; ?>>Nam</option>
+                            <option value="Nu" <?php echo (string)$student['gioi_tinh'] === 'Nu' ? 'selected' : ''; ?>>Nu</option>
                         </select>
                     </div>
                     <div>
@@ -210,16 +223,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <select name="lop_id" required>
                             <option value="">-- Chon lop --</option>
                             <?php foreach ($lops as $lop): ?>
-                                <option value="<?php echo htmlspecialchars($lop['lop_id']); ?>" <?php echo $student['lop_id'] === $lop['lop_id'] ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($lop['ten_lop']); ?>
+                                <option value="<?php echo htmlspecialchars($lop['lop_id']); ?>" <?php echo (string)$student['lop_id'] === (string)$lop['lop_id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($lop['ma_lop'] . ' - ' . $lop['ten_lop']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <?php if (!$isEdit): ?>
+
+                    <?php if ($isEdit): ?>
+                        <div>
+                            <label>Trang thai hoc tap</label>
+                            <select name="trang_thai">
+                                <?php $tt = (string)($student['trang_thai'] ?? 'DANG_HOC'); ?>
+                                <option value="DANG_HOC" <?php echo $tt === 'DANG_HOC' ? 'selected' : ''; ?>>Dang hoc</option>
+                                <option value="TAM_NGUNG" <?php echo $tt === 'TAM_NGUNG' ? 'selected' : ''; ?>>Tam ngung</option>
+                                <option value="THOI_HOC" <?php echo $tt === 'THOI_HOC' ? 'selected' : ''; ?>>Thoi hoc</option>
+                            </select>
+                        </div>
+                    <?php else: ?>
                         <div>
                             <label>Mat khau khoi tao</label>
-                            <input type="text" name="mat_khau" value="123456">
+                            <input type="text" name="mat_khau" placeholder="De trong = dung msv">
                         </div>
                     <?php endif; ?>
                 </div>

@@ -3,6 +3,11 @@ session_start();
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/constants.php';
 
+if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'SINH_VIEN') {
+    header('Location: ../auth/login.php');
+    exit;
+}
+
 $pdo = getDatabaseConnection();
 $tai_khoan_id = $_SESSION['user_id'] ?? '';
 $sinh_vien_id = '';
@@ -14,7 +19,7 @@ $selected_hoc_ky_id = $_GET['hoc_ky_id'] ?? '';
 if (!$pdo) {
     $error = 'Khong ket noi duoc co so du lieu.';
 } else {
-    $stmt = $pdo->query("SELECT hoc_ky_id, ma_hoc_ky, ten_hoc_ky FROM hoc_ky ORDER BY ten_hoc_ky DESC");
+    $stmt = $pdo->query("SELECT hoc_ky_id, ten_hoc_ky FROM hoc_ky ORDER BY ten_hoc_ky DESC");
     $hoc_kys = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (!$selected_hoc_ky_id && !empty($hoc_kys)) {
@@ -70,7 +75,7 @@ if (!$pdo) {
                     <select id="hoc-ky-id" class="w-full rounded-lg border-slate-300">
                         <?php foreach ($hoc_kys as $hk): ?>
                             <option value="<?php echo htmlspecialchars($hk['hoc_ky_id']); ?>" <?php echo $selected_hoc_ky_id === $hk['hoc_ky_id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($hk['ma_hoc_ky'] . ' - ' . $hk['ten_hoc_ky']); ?>
+                                <?php echo htmlspecialchars($hk['ten_hoc_ky']); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -119,7 +124,7 @@ if (!$pdo) {
             }
 
             const hocKyId = hocKyEl.value;
-            const url = `${PY_API}/api/gpa/transcript/${encodeURIComponent(sinhVienId)}?hoc_ky_id=${encodeURIComponent(hocKyId)}`;
+            const url = `${PY_API}/api/sinh-vien/${encodeURIComponent(sinhVienId)}/bang-diem?hoc_ky_id=${encodeURIComponent(hocKyId)}`;
             const res = await fetch(url);
             const data = await res.json();
 
@@ -127,7 +132,7 @@ if (!$pdo) {
                 throw new Error(data.message || data.error || 'Khong the tai bang diem');
             }
 
-            const rows = data.data || [];
+            const rows = (data.data && data.data.bang_diem) ? data.data.bang_diem : [];
             tbody.innerHTML = '';
 
             if (rows.length === 0) {
@@ -140,7 +145,7 @@ if (!$pdo) {
                 const tr = document.createElement('tr');
                 tr.className = 'border-t border-slate-100';
                 tr.innerHTML = `
-                    <td class="px-3 py-2">${item.ma_hoc_ky || ''}</td>
+                    <td class="px-3 py-2">${item.ten_hoc_ky || ''}</td>
                     <td class="px-3 py-2">${item.ma_mon || ''}</td>
                     <td class="px-3 py-2">${item.ten_mon || ''}</td>
                     <td class="px-3 py-2">${item.diem_cc ?? ''}</td>
@@ -153,7 +158,7 @@ if (!$pdo) {
                 tbody.appendChild(tr);
             });
 
-            metaBox.textContent = `${rows[0].msv || ''} - ${rows[0].ten_sv || ''}`;
+            metaBox.textContent = `Da tai ${rows.length} mon hoc da duyet.`;
         }
 
         document.getElementById('btn-load').addEventListener('click', () => {
@@ -169,15 +174,7 @@ if (!$pdo) {
             }
 
             try {
-                const res = await fetch(`${PY_API}/api/bao-cao/export/bang-diem-pdf`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        sinh_vien_id: sinhVienId
-                    })
-                });
+                const res = await fetch(`${PY_API}/api/bao-cao/bang-diem-pdf/${encodeURIComponent(sinhVienId)}`);
 
                 if (!res.ok) {
                     const errorData = await res.json();

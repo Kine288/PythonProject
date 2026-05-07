@@ -2,6 +2,28 @@
 
 Dự án hướng tới quy mô triển khai tại cấp Khoa (Khoa Công nghệ Thông tin), tập trung số hóa quy trình quản lý điểm và hồ sơ học thuật trên nền tảng Web.
 
+## Ghi chú triển khai nhanh
+
+### Schema SQL để làm gì?
+
+- Schema là "bản thiết kế" của CSDL: định nghĩa bảng, cột, kiểu dữ liệu, khóa chính/khóa ngoại, ràng buộc và chỉ mục.
+- File schema chuẩn của dự án là `data/schema.sql`, dùng để:
+    - Khởi tạo CSDL ban đầu đúng cấu trúc nghiệp vụ.
+    - Đồng bộ backend (Python API), frontend (PHP), và dữ liệu seed theo cùng một chuẩn.
+    - Ngăn lỗi lệch cột/lệch bảng (ví dụ lỗi truy vấn do dùng tên cột cũ).
+
+### Cơ sở dữ liệu đang lưu ở đâu?
+
+- Tên DB runtime hiện tại: `project_python`.
+- MySQL `@@datadir` hiện tại: `D:\MySQL\Data\Data\`.
+- Thư mục dữ liệu của DB này thường nằm tại: `D:\MySQL\Data\Data\project_python\`.
+
+Lưu ý: vị trí vật lý phụ thuộc cấu hình MySQL trên máy. Có thể kiểm tra lại bằng câu lệnh SQL:
+
+```sql
+SELECT DATABASE() AS db_name, @@datadir AS datadir;
+```
+
 ## Bước 1: Phân tích vấn đề và Xác định phạm vi hệ thống
 
 ### 1.1. Bối cảnh và Quy trình hiện tại (As-Is)
@@ -240,12 +262,12 @@ Hệ thống Quản lý Sinh viên cấp Khoa là nền tảng tập trung (Cent
 - Lưu trữ (Persistent): Điểm GPA Hệ 10 và GPA Hệ 4 tổng hợp của học kỳ/toàn khóa bắt buộc lưu vào bảng `KET_QUA_HOC_KY` để phục vụ truy xuất tốc độ cao cho BR4 và BR5.
 - Bảng tham chiếu chuẩn:
     - 8.5 - 10.0 --> A (4.0)
-    - 8.0 - 8.4 --> B+ (3.5)
-    - 7.0 - 7.9 --> B (3.0)
-    - 6.5 - 6.9 --> C+ (2.5)
-    - 5.5 - 6.4 --> C (2.0)
-    - 5.0 - 5.4 --> D+ (1.5)
-    - 4.0 - 4.9 --> D (1.0)
+    - 7.8 - 8.4 --> B+ (3.5)
+    - 7.0 - 7.7 --> B (3.0)
+    - 6.3 - 6.9 --> C+ (2.5)
+    - 5.5 - 6.2 --> C (2.0)
+    - 4.8 - 5.4 --> D+ (1.5)
+    - 4.0 - 4.7 --> D (1.0)
     - Dưới 4.0 --> F (0.0) - Tự động đánh dấu Không đạt.
 
 ### BR3: Quy tắc Tính Điểm Trung bình chung (GPA)

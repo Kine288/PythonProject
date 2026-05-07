@@ -25,18 +25,18 @@ def lay_ds_canh_bao(hoc_ky_id: str, muc_canh_bao: Optional[int] = None) -> List[
 	try:
 		with conn.cursor() as cursor:
 			sql = """
-				SELECT sv.msv, sv.ten_sv, l.ten_lop,
-				       kq.gpa_tich_luy_he_4, kq.xep_loai, kq.muc_canh_bao
+				SELECT sv.msv, sv.ho_ten, lsh.ten_lop,
+				       kq.gpa_tich_luy_he4, kq.xep_loai, kq.muc_canh_bao
 				FROM ket_qua_hoc_ky kq
 				JOIN sinh_vien sv ON sv.sinh_vien_id = kq.sinh_vien_id
-				JOIN lop l ON l.lop_id = sv.lop_id
+				LEFT JOIN lop_sinh_hoat lsh ON lsh.lop_id = sv.lop_id
 				WHERE kq.hoc_ky_id = %s AND kq.muc_canh_bao > 0
 			"""
 			params = [hoc_ky_id]
 			if muc_canh_bao is not None:
 				sql += " AND kq.muc_canh_bao = %s"
 				params.append(muc_canh_bao)
-			sql += " ORDER BY kq.muc_canh_bao DESC, kq.gpa_tich_luy_he_4 ASC, sv.msv ASC"
+			sql += " ORDER BY kq.muc_canh_bao DESC, kq.gpa_tich_luy_he4 ASC, sv.msv ASC"
 
 			cursor.execute(sql, tuple(params))
 			return cursor.fetchall()
@@ -85,9 +85,9 @@ def xuat_excel_canh_bao(hoc_ky_id: str, muc_canh_bao: Optional[int] = None) -> s
 		ws.append(
 			[
 				row.get("msv"),
-				row.get("ten_sv"),
+				row.get("ho_ten"),
 				row.get("ten_lop"),
-				row.get("gpa_tich_luy_he_4"),
+				row.get("gpa_tich_luy_he4"),
 				row.get("xep_loai"),
 				row.get("muc_canh_bao"),
 			]
@@ -103,10 +103,10 @@ def _lay_bang_diem_sinh_vien(sinh_vien_id: str):
 		with conn.cursor() as cursor:
 			cursor.execute(
 				"""
-				SELECT sv.msv, sv.ten_sv,
-				       hk.ma_hoc_ky, mh.ma_mon, mh.ten_mon, mh.so_tin_chi,
+				SELECT sv.msv, sv.ho_ten,
+				       hk.ten_hoc_ky, mh.ma_mon, mh.ten_mon, mh.so_tin_chi,
 				       ds.diem_tong,
-				       kq.gpa_he_4, kq.gpa_tich_luy_he_4, kq.xep_loai
+				       kq.gpa_hk_he4, kq.gpa_tich_luy_he4, kq.xep_loai
 				FROM ds_lhp ds
 				JOIN sinh_vien sv ON sv.sinh_vien_id = ds.sinh_vien_id
 				JOIN lop_hoc_phan lhp ON lhp.lhp_id = ds.lhp_id
@@ -116,6 +116,7 @@ def _lay_bang_diem_sinh_vien(sinh_vien_id: str):
 				  ON kq.sinh_vien_id = sv.sinh_vien_id
 				 AND kq.hoc_ky_id = hk.hoc_ky_id
 				WHERE sv.sinh_vien_id = %s
+				  AND lhp.trang_thai = 'DA_DUYET'
 				ORDER BY hk.ten_hoc_ky DESC, mh.ma_mon ASC
 				""",
 				(sinh_vien_id,),
@@ -147,7 +148,7 @@ def xuat_pdf_bang_diem_ca_nhan(sinh_vien_id: str) -> str:
 	y -= 24
 	c.setFont("Helvetica", 11)
 	c.drawString(40, y, f"MSV: {first['msv']}")
-	c.drawString(220, y, f"Ho ten: {first['ten_sv']}")
+	c.drawString(220, y, f"Ho ten: {first['ho_ten']}")
 	y -= 24
 
 	c.setFont("Helvetica-Bold", 10)
@@ -166,12 +167,12 @@ def xuat_pdf_bang_diem_ca_nhan(sinh_vien_id: str) -> str:
 			y = height - 40
 			c.setFont("Helvetica", 10)
 
-		c.drawString(40, y, str(row.get("ma_hoc_ky") or ""))
+		c.drawString(40, y, str(row.get("ten_hoc_ky") or ""))
 		c.drawString(120, y, str(row.get("ma_mon") or ""))
 		c.drawString(250, y, str(row.get("so_tin_chi") or ""))
 		c.drawString(320, y, str(row.get("diem_tong") or ""))
-		c.drawString(400, y, str(row.get("gpa_he_4") or ""))
-		c.drawString(470, y, str(row.get("gpa_tich_luy_he_4") or ""))
+		c.drawString(400, y, str(row.get("gpa_hk_he4") or ""))
+		c.drawString(470, y, str(row.get("gpa_tich_luy_he4") or ""))
 		y -= 16
 
 	last = rows[0]

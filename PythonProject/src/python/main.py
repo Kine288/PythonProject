@@ -17,6 +17,7 @@ from api.diem_api import diem_bp  # noqa: E402
 from api.gpa_api import gpa_bp  # noqa: E402
 from api.bao_cao_api import bao_cao_bp  # noqa: E402
 from api.sinh_vien_api import sinh_vien_bp  # noqa: E402
+from api.auth_routes import auth_bp  # noqa: E402
 
 
 def create_app() -> Flask:
@@ -26,6 +27,7 @@ def create_app() -> Flask:
 	app.register_blueprint(gpa_bp)
 	app.register_blueprint(bao_cao_bp)
 	app.register_blueprint(sinh_vien_bp)
+	app.register_blueprint(auth_bp)
 
 	@app.after_request
 	def add_cors_headers(response):

@@ -8,7 +8,7 @@ $hoc_kys = [];
 $selected_hoc_ky_id = $_GET['hoc_ky_id'] ?? '';
 
 if ($pdo) {
-    $stmt = $pdo->query("SELECT hoc_ky_id, ma_hoc_ky, ten_hoc_ky FROM hoc_ky ORDER BY ten_hoc_ky DESC");
+    $stmt = $pdo->query("SELECT hoc_ky_id, ten_hoc_ky, nam_hoc, ky_hoc FROM hoc_ky ORDER BY nam_hoc DESC, ky_hoc DESC");
     $hoc_kys = $stmt->fetchAll(PDO::FETCH_ASSOC);
     if (!$selected_hoc_ky_id && !empty($hoc_kys)) {
         $selected_hoc_ky_id = $hoc_kys[0]['hoc_ky_id'];
@@ -42,7 +42,7 @@ if ($pdo) {
                     <select id="hoc-ky-id" class="w-full rounded-lg border-slate-300">
                         <?php foreach ($hoc_kys as $hk): ?>
                             <option value="<?php echo htmlspecialchars($hk['hoc_ky_id']); ?>" <?php echo $selected_hoc_ky_id === $hk['hoc_ky_id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($hk['ma_hoc_ky'] . ' - ' . $hk['ten_hoc_ky']); ?>
+                                <?php echo htmlspecialchars($hk['ten_hoc_ky'] . ' (' . $hk['nam_hoc'] . ' - Ky ' . $hk['ky_hoc'] . ')'); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
