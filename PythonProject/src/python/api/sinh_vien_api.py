@@ -7,6 +7,7 @@ from services.academic_service import (
     bang_diem_sinh_vien,
     create_lhp,
     create_sinh_vien_admin,
+    delete_sinh_vien,
     delete_lhp,
     doi_vai_tro,
     get_sinh_vien,
@@ -73,6 +74,19 @@ def api_update_sinh_vien(sv_id: str):
     payload = request.get_json(silent=True) or {}
     try:
         data = update_sinh_vien_hoc_vu(sv_id, payload)
+        return _ok(data)
+    except ValueError as exc:
+        return _error(str(exc), 400)
+    except Exception as exc:
+        return _error(str(exc), 500)
+
+
+@sinh_vien_bp.delete("/sinh-vien/<sv_id>")
+def api_delete_sinh_vien(sv_id: str):
+    payload = request.get_json(silent=True) or {}
+    nguoi_thay_doi = (payload.get("nguoi_thay_doi") or "").strip()
+    try:
+        data = delete_sinh_vien(sv_id, nguoi_thay_doi)
         return _ok(data)
     except ValueError as exc:
         return _error(str(exc), 400)
@@ -213,6 +227,8 @@ def api_add_sv_lhp(lhp_id: str):
 def api_remove_sv_lhp(lhp_id: str, sv_id: str):
     try:
         return _ok(remove_student_from_lhp(lhp_id, sv_id))
+    except ValueError as exc:
+        return _error(str(exc), 400)
     except Exception as exc:
         return _error(str(exc), 500)
 

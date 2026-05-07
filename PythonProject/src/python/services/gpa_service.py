@@ -15,6 +15,21 @@ def _round2(value: Decimal) -> Decimal:
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
+def _is_expelled_student(sinh_vien_id: str) -> bool:
+    with db_cursor() as (_, cursor):
+        cursor.execute(
+            """
+            SELECT trang_thai
+            FROM sinh_vien
+            WHERE sinh_vien_id = %s
+            LIMIT 1
+            """,
+            (sinh_vien_id,),
+        )
+        row = cursor.fetchone()
+        return bool(row and row.get("trang_thai") == "BUOC_THOI_HOC")
+
+
 def _weighted_gpa(rows: List[Dict]) -> Tuple[Decimal, Decimal, int]:
     total_credit = 0
     sum_he10 = Decimal("0")
@@ -96,6 +111,9 @@ def dem_hoc_ky_da_qua(sinh_vien_id: str) -> int:
 
 
 def br3_tinh_gpa_hoc_ky(sinh_vien_id: str, hoc_ky_id: str) -> Tuple[Decimal, Decimal, int]:
+    if _is_expelled_student(sinh_vien_id):
+        return Decimal("0.00"), Decimal("0.00"), 0
+
     with db_cursor() as (_, cursor):
         cursor.execute(
             """
@@ -103,9 +121,11 @@ def br3_tinh_gpa_hoc_ky(sinh_vien_id: str, hoc_ky_id: str) -> Tuple[Decimal, Dec
             FROM ds_lhp ds
             JOIN lop_hoc_phan lhp ON lhp.lhp_id = ds.lhp_id
             JOIN mon_hoc mh ON mh.mon_hoc_id = lhp.mon_hoc_id
+            JOIN sinh_vien sv ON sv.sinh_vien_id = ds.sinh_vien_id
             WHERE ds.sinh_vien_id = %s
               AND lhp.hoc_ky_id = %s
               AND lhp.trang_thai = 'DA_DUYET'
+              AND sv.trang_thai <> 'BUOC_THOI_HOC'
               AND mh.tinh_gpa = TRUE
               AND ds.diem_tong IS NOT NULL
             """,
@@ -117,6 +137,9 @@ def br3_tinh_gpa_hoc_ky(sinh_vien_id: str, hoc_ky_id: str) -> Tuple[Decimal, Dec
 
 
 def br3_tinh_gpa_tich_luy(sinh_vien_id: str) -> Tuple[Decimal, Decimal, int]:
+    if _is_expelled_student(sinh_vien_id):
+        return Decimal("0.00"), Decimal("0.00"), 0
+
     with db_cursor() as (_, cursor):
         cursor.execute(
             """
@@ -131,8 +154,10 @@ def br3_tinh_gpa_tich_luy(sinh_vien_id: str) -> Tuple[Decimal, Decimal, int]:
             JOIN ds_lhp ds ON ds.lhp_id = ls.lhp_id AND ds.sinh_vien_id = ls.sinh_vien_id
             JOIN lop_hoc_phan lhp ON lhp.lhp_id = ds.lhp_id
             JOIN mon_hoc mh ON mh.mon_hoc_id = lhp.mon_hoc_id
+                        JOIN sinh_vien sv ON sv.sinh_vien_id = ls.sinh_vien_id
             WHERE ls.sinh_vien_id = %s
               AND lhp.trang_thai = 'DA_DUYET'
+                            AND sv.trang_thai <> 'BUOC_THOI_HOC'
               AND mh.tinh_gpa = TRUE
               AND ds.diem_tong IS NOT NULL
             """,
@@ -166,7 +191,25 @@ def br4_xep_loai(gpa_tich_luy_he4: Decimal, sinh_vien_id: str) -> str:
 
 
 def br5_xac_dinh_canh_bao(sinh_vien_id: str, hoc_ky_id: str, gpa_tich_luy_he4: Decimal) -> int:
-    so_hk_da_qua = dem_hoc_ky_da_qua(sinh_vien_id) + 1
+    with db_cursor() as (_, cursor):
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total,
+                   SUM(CASE WHEN hoc_ky_id = %s THEN 1 ELSE 0 END) AS has_current
+            FROM ket_qua_hoc_ky
+            WHERE sinh_vien_id = %s
+            """,
+            (hoc_ky_id, sinh_vien_id),
+        )
+        count_row = cursor.fetchone() or {"total": 0, "has_current": 0}
+
+    so_hk_da_qua = int(count_row["total"] or 0)
+    if int(count_row["has_current"] or 0) == 0:
+        so_hk_da_qua += 1
+
+    if so_hk_da_qua <= 0:
+        so_hk_da_qua = 1
+
     if so_hk_da_qua == 1:
         nguong = Decimal("1.20")
     elif so_hk_da_qua == 2:
@@ -198,19 +241,7 @@ def br5_xac_dinh_canh_bao(sinh_vien_id: str, hoc_ky_id: str, gpa_tich_luy_he4: D
     return current
 
 
-def tinh_va_luu_gpa_hoc_ky(hoc_ky_id: str) -> List[Dict]:
-    with db_cursor() as (_, cursor):
-        cursor.execute(
-            """
-            SELECT DISTINCT ds.sinh_vien_id
-            FROM ds_lhp ds
-            JOIN lop_hoc_phan lhp ON lhp.lhp_id = ds.lhp_id
-            WHERE lhp.hoc_ky_id = %s
-            """,
-            (hoc_ky_id,),
-        )
-        sinh_vien_ids = [r["sinh_vien_id"] for r in cursor.fetchall()]
-
+def _module_tu_dong_canh_bao_hoc_vu(hoc_ky_id: str, sinh_vien_ids: List[str]) -> List[Dict]:
     results: List[Dict] = []
 
     def _tx(cursor):
@@ -272,6 +303,23 @@ def tinh_va_luu_gpa_hoc_ky(hoc_ky_id: str) -> List[Dict]:
 
     execute_transaction(_tx)
     return results
+
+
+def tinh_va_luu_gpa_hoc_ky(hoc_ky_id: str) -> List[Dict]:
+    with db_cursor() as (_, cursor):
+        cursor.execute(
+            """
+            SELECT DISTINCT ds.sinh_vien_id
+            FROM ds_lhp ds
+            JOIN lop_hoc_phan lhp ON lhp.lhp_id = ds.lhp_id
+            JOIN sinh_vien sv ON sv.sinh_vien_id = ds.sinh_vien_id
+            WHERE lhp.hoc_ky_id = %s
+              AND sv.trang_thai <> 'BUOC_THOI_HOC'
+            """,
+            (hoc_ky_id,),
+        )
+        sinh_vien_ids = [r["sinh_vien_id"] for r in cursor.fetchall()]
+    return _module_tu_dong_canh_bao_hoc_vu(hoc_ky_id, sinh_vien_ids)
 
 
 def lay_ket_qua_sinh_vien(sinh_vien_id: str, hoc_ky_id: str | None = None):

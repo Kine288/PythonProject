@@ -97,6 +97,108 @@ def xuat_excel_canh_bao(hoc_ky_id: str, muc_canh_bao: Optional[int] = None) -> s
 	return file_path
 
 
+def xuat_excel_tong_ket_hoc_vu(hoc_ky_id: str, lop_id: Optional[str] = None) -> str:
+	try:
+		from openpyxl import Workbook
+	except Exception as exc:  # pragma: no cover
+		raise RuntimeError("Thieu thu vien openpyxl. Vui long cai dat openpyxl.") from exc
+
+	conn = _conn_or_raise()
+	try:
+		with conn.cursor() as cursor:
+			cursor.execute(
+				"""
+				SELECT
+					lsh.lop_id,
+					lsh.ma_lop,
+					lsh.ten_lop,
+					nk.ten_nien_khoa,
+					COUNT(sv.sinh_vien_id) AS tong_sv,
+					SUM(CASE WHEN kq.kqhk_id IS NOT NULL THEN 1 ELSE 0 END) AS da_tong_ket,
+					SUM(CASE WHEN COALESCE(kq.muc_canh_bao, 0) > 0 THEN 1 ELSE 0 END) AS so_sv_canh_bao,
+					ROUND(AVG(kq.gpa_tich_luy_he4), 2) AS gpa_tb,
+					CASE
+						WHEN COUNT(sv.sinh_vien_id) = 0 THEN 'CHUA_CO_DU_LIEU'
+						WHEN SUM(CASE WHEN kq.kqhk_id IS NOT NULL THEN 1 ELSE 0 END) < COUNT(sv.sinh_vien_id) THEN 'DANG_XU_LY'
+						ELSE 'HOAN_TAT'
+					END AS trang_thai_tong_ket
+				FROM lop_sinh_hoat lsh
+				LEFT JOIN nien_khoa nk ON nk.nien_khoa_id = lsh.nien_khoa_id
+				LEFT JOIN sinh_vien sv ON sv.lop_id = lsh.lop_id
+				LEFT JOIN ket_qua_hoc_ky kq ON kq.sinh_vien_id = sv.sinh_vien_id AND kq.hoc_ky_id = %s
+				GROUP BY lsh.lop_id, lsh.ma_lop, lsh.ten_lop, nk.ten_nien_khoa
+				ORDER BY lsh.ma_lop ASC
+				""",
+				(hoc_ky_id,),
+			)
+			lop_summary = cursor.fetchall()
+
+			chi_tiet_lop = []
+			if lop_id:
+				cursor.execute(
+					"""
+					SELECT
+						sv.sinh_vien_id,
+						sv.msv,
+						sv.ho_ten,
+						sv.trang_thai,
+						kq.gpa_hk_he4,
+						kq.gpa_tich_luy_he4,
+						kq.xep_loai,
+						kq.muc_canh_bao
+					FROM sinh_vien sv
+					LEFT JOIN ket_qua_hoc_ky kq ON kq.sinh_vien_id = sv.sinh_vien_id AND kq.hoc_ky_id = %s
+					WHERE sv.lop_id = %s
+					ORDER BY sv.msv ASC
+					""",
+					(hoc_ky_id, lop_id),
+				)
+				chi_tiet_lop = cursor.fetchall()
+	finally:
+		conn.close()
+
+	file_path = _temp_file(".xlsx")
+	wb = Workbook()
+	ws_summary = wb.active
+	ws_summary.title = "TongKetTheoLop"
+	ws_summary.append(["Hoc ky", hoc_ky_id])
+	ws_summary.append([])
+	ws_summary.append(["Ma lop", "Ten lop", "Khoa", "Tong SV", "Da tong ket", "SV canh bao", "GPA TB", "Trang thai"])
+
+	for row in lop_summary:
+		ws_summary.append(
+			[
+				row.get("ma_lop"),
+				row.get("ten_lop"),
+				row.get("ten_nien_khoa"),
+				row.get("tong_sv"),
+				row.get("da_tong_ket"),
+				row.get("so_sv_canh_bao"),
+				row.get("gpa_tb"),
+				row.get("trang_thai_tong_ket"),
+			]
+		)
+
+	if chi_tiet_lop:
+		ws_detail = wb.create_sheet("ChiTietLop")
+		ws_detail.append(["MSSV", "Ho ten", "GPA hoc ky (he 4)", "GPA tich luy (he 4)", "Xep loai", "Muc canh bao", "Trang thai hoc tap"])
+		for row in chi_tiet_lop:
+			ws_detail.append(
+				[
+					row.get("msv"),
+					row.get("ho_ten"),
+					row.get("gpa_hk_he4"),
+					row.get("gpa_tich_luy_he4"),
+					row.get("xep_loai"),
+					row.get("muc_canh_bao"),
+					row.get("trang_thai"),
+				]
+			)
+
+	wb.save(file_path)
+	return file_path
+
+
 def _lay_bang_diem_sinh_vien(sinh_vien_id: str):
 	conn = _conn_or_raise()
 	try:

@@ -3,15 +3,27 @@ session_start();
 require_once __DIR__ . '/../../../../config/database.php';
 require_once __DIR__ . '/../../../../config/constants.php';
 
+if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'GIAO_VU') {
+    header('Location: ../../auth/login.php');
+    exit;
+}
+
 $pdo = getDatabaseConnection();
-$hoc_kys = [];
-$selected_hoc_ky_id = $_GET['hoc_ky_id'] ?? '';
+$hocKys = [];
+$selectedHocKy = trim($_GET['hoc_ky_id'] ?? '');
 
 if ($pdo) {
-    $stmt = $pdo->query("SELECT hoc_ky_id, ten_hoc_ky, nam_hoc, ky_hoc FROM hoc_ky ORDER BY nam_hoc DESC, ky_hoc DESC");
-    $hoc_kys = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    if (!$selected_hoc_ky_id && !empty($hoc_kys)) {
-        $selected_hoc_ky_id = $hoc_kys[0]['hoc_ky_id'];
+    $hocKys = $pdo->query('SELECT hoc_ky_id, ten_hoc_ky, nam_hoc, ky_hoc, is_hien_tai FROM hoc_ky ORDER BY nam_hoc DESC, ky_hoc DESC')->fetchAll(PDO::FETCH_ASSOC);
+    if ($selectedHocKy === '' && !empty($hocKys)) {
+        foreach ($hocKys as $hk) {
+            if (!empty($hk['is_hien_tai'])) {
+                $selectedHocKy = $hk['hoc_ky_id'];
+                break;
+            }
+        }
+        if ($selectedHocKy === '') {
+            $selectedHocKy = $hocKys[0]['hoc_ky_id'];
+        }
     }
 }
 ?>
@@ -22,72 +34,74 @@ if ($pdo) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bao cao canh bao hoc vu</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link rel="stylesheet" href="../../../../assets/css/Background.css">
+    <link rel="stylesheet" href="../../../../assets/css/components.css">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 
-<body class="bg-slate-50 text-slate-800">
+<body>
     <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
-    <main class="ml-64 min-h-screen">
+
+    <div class="app-content">
         <?php include __DIR__ . '/../../layouts/header.php'; ?>
 
-        <section class="p-6 space-y-6">
-            <div>
-                <h1 class="text-2xl font-bold">Bao cao canh bao hoc vu</h1>
-                <p class="text-sm text-slate-500">Loc theo hoc ky, muc canh bao va xuat danh sach Excel.</p>
-            </div>
-
-            <div class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-4">
+        <div class="app-content-inner">
+            <div class="dashboard-header">
                 <div>
-                    <label class="mb-1 block text-sm font-semibold">Hoc ky</label>
-                    <select id="hoc-ky-id" class="w-full rounded-lg border-slate-300">
-                        <?php foreach ($hoc_kys as $hk): ?>
-                            <option value="<?php echo htmlspecialchars($hk['hoc_ky_id']); ?>" <?php echo $selected_hoc_ky_id === $hk['hoc_ky_id'] ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($hk['ten_hoc_ky'] . ' (' . $hk['nam_hoc'] . ' - Ky ' . $hk['ky_hoc'] . ')'); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="mb-1 block text-sm font-semibold">Muc canh bao</label>
-                    <select id="muc-canh-bao" class="w-full rounded-lg border-slate-300">
-                        <option value="">Tat ca</option>
-                        <option value="1">Muc 1</option>
-                        <option value="2">Muc 2</option>
-                        <option value="3">Buoc thoi hoc</option>
-                    </select>
-                </div>
-
-                <div class="flex items-end">
-                    <button id="btn-load" class="w-full rounded-lg bg-teal-600 px-4 py-2 text-white hover:bg-teal-700" type="button">Tai danh sach</button>
-                </div>
-
-                <div class="flex items-end">
-                    <button id="btn-export" type="button" class="w-full rounded-lg bg-slate-800 px-4 py-2 text-white hover:bg-slate-900">Xuat Excel</button>
+                    <h1>Bao cao canh bao hoc vu</h1>
+                    <p class="muted-text">Loc theo hoc ky va muc canh bao, sau do xuat danh sach Excel.</p>
                 </div>
             </div>
 
-            <div id="status-box" class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">Chua co du lieu.</div>
-
-            <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                <table class="min-w-full text-sm" id="warnings-table">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-3 py-2 text-left">MSV</th>
-                            <th class="px-3 py-2 text-left">Ten sinh vien</th>
-                            <th class="px-3 py-2 text-left">Lop</th>
-                            <th class="px-3 py-2 text-left">GPA tich luy he 4</th>
-                            <th class="px-3 py-2 text-left">Xep loai</th>
-                            <th class="px-3 py-2 text-left">Muc canh bao</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+            <div class="card" style="margin-bottom:12px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:12px;align-items:end;">
+                    <div class="form-group" style="margin:0;">
+                        <label>Hoc ky</label>
+                        <select id="hoc-ky-id">
+                            <?php foreach ($hocKys as $hk): ?>
+                                <option value="<?php echo htmlspecialchars($hk['hoc_ky_id']); ?>" <?php echo $selectedHocKy === $hk['hoc_ky_id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($hk['ten_hoc_ky'] . ' (' . $hk['nam_hoc'] . ' - Ky ' . $hk['ky_hoc'] . ')'); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label>Muc canh bao</label>
+                        <select id="muc-canh-bao">
+                            <option value="">Tat ca</option>
+                            <option value="1">Muc 1</option>
+                            <option value="2">Muc 2</option>
+                            <option value="3">Buoc thoi hoc</option>
+                        </select>
+                    </div>
+                    <button id="btn-load" class="btn-primary" type="button">Tai danh sach</button>
+                    <button id="btn-export" class="btn-secondary" type="button">Xuat Excel</button>
+                </div>
             </div>
-        </section>
+
+            <div id="status-box" class="alert-info" style="margin-bottom:12px;">Chua co du lieu.</div>
+
+            <div class="card">
+                <div style="overflow-x:auto;">
+                    <table class="table-modern" id="warnings-table">
+                        <thead>
+                            <tr>
+                                <th>MSV</th>
+                                <th>Ten sinh vien</th>
+                                <th>Lop</th>
+                                <th>GPA tich luy he 4</th>
+                                <th>Xep loai</th>
+                                <th>Muc canh bao</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
         <?php include __DIR__ . '/../../layouts/footer.php'; ?>
-    </main>
+    </div>
 
     <script>
         const PY_API = '<?php echo rtrim(PYTHON_API_URL, '/'); ?>';
@@ -95,6 +109,11 @@ if ($pdo) {
         const mucEl = document.getElementById('muc-canh-bao');
         const tbody = document.querySelector('#warnings-table tbody');
         const statusBox = document.getElementById('status-box');
+
+        function showStatus(message, ok = true) {
+            statusBox.className = ok ? 'alert-info' : 'alert-danger';
+            statusBox.textContent = message;
+        }
 
         async function loadWarnings() {
             const hocKyId = hocKyEl.value;
@@ -108,39 +127,36 @@ if ($pdo) {
             const data = await res.json();
 
             if (!data.success) {
-                throw new Error(data.message || data.error || 'Khong the tai danh sach canh bao');
+                throw new Error(data.message || 'Khong the tai danh sach canh bao');
             }
 
             const rows = data.data || [];
             tbody.innerHTML = '';
 
             if (rows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-3">Khong co du lieu.</td></tr>';
-                statusBox.textContent = 'Khong co sinh vien trong danh sach canh bao.';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Khong co du lieu.</td></tr>';
+                showStatus('Khong co sinh vien trong danh sach canh bao.');
                 return;
             }
 
-            rows.forEach(item => {
+            rows.forEach((item) => {
                 const tr = document.createElement('tr');
-                tr.className = 'border-t border-slate-100';
                 tr.innerHTML = `
-                    <td class="px-3 py-2">${item.msv || ''}</td>
-                    <td class="px-3 py-2">${item.ho_ten || ''}</td>
-                    <td class="px-3 py-2">${item.ten_lop || ''}</td>
-                    <td class="px-3 py-2">${item.gpa_tich_luy_he4 ?? ''}</td>
-                    <td class="px-3 py-2">${item.xep_loai || ''}</td>
-                    <td class="px-3 py-2">${item.muc_canh_bao ?? 0}</td>
+                    <td>${item.msv || ''}</td>
+                    <td>${item.ho_ten || ''}</td>
+                    <td>${item.ten_lop || ''}</td>
+                    <td>${item.gpa_tich_luy_he4 ?? ''}</td>
+                    <td>${item.xep_loai || ''}</td>
+                    <td>${item.muc_canh_bao ?? 0}</td>
                 `;
                 tbody.appendChild(tr);
             });
 
-            statusBox.textContent = `Da tai ${rows.length} ban ghi canh bao.`;
+            showStatus(`Da tai ${rows.length} ban ghi canh bao.`);
         }
 
         document.getElementById('btn-load').addEventListener('click', () => {
-            loadWarnings().catch(err => {
-                statusBox.textContent = err.message;
-            });
+            loadWarnings().catch((err) => showStatus(err.message, false));
         });
 
         document.getElementById('btn-export').addEventListener('click', async () => {
@@ -152,8 +168,8 @@ if ($pdo) {
                     },
                     body: JSON.stringify({
                         hoc_ky_id: hocKyEl.value,
-                        muc_canh_bao: mucEl.value || null
-                    })
+                        muc_canh_bao: mucEl.value || null,
+                    }),
                 });
 
                 if (!response.ok) {
@@ -169,14 +185,12 @@ if ($pdo) {
                 link.click();
                 URL.revokeObjectURL(fileUrl);
             } catch (err) {
-                statusBox.textContent = err.message;
+                showStatus(err.message, false);
             }
         });
 
         if (hocKyEl.value) {
-            loadWarnings().catch(err => {
-                statusBox.textContent = err.message;
-            });
+            loadWarnings().catch(() => {});
         }
     </script>
 </body>

@@ -3,355 +3,278 @@ session_start();
 require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../../config/constants.php';
 
-$lhp_id = $_GET['lhp_id'] ?? '';
-$tai_khoan_id = $_SESSION['user_id'] ?? '';
-$giang_vien_id = '';
+if (!isset($_SESSION['user_id']) || (($_SESSION['user_role'] ?? '') !== 'GIANG_VIEN')) {
+    header('Location: ../auth/login.php');
+    exit;
+}
+
+$lhpId = trim($_GET['lhp_id'] ?? '');
+$taiKhoanId = (string)($_SESSION['user_id'] ?? '');
 $pdo = getDatabaseConnection();
-$ds_sinh_vien = [];
-$page_error = '';
-$page_info = '';
-$is_editable = false;
+$dsSinhVien = [];
+$lhpInfo = null;
+$pageError = '';
+$pageInfo = '';
+$giangVienId = '';
 
 if (!$pdo) {
-  $page_error = 'Khong ket noi duoc co so du lieu.';
-} elseif ($tai_khoan_id === '') {
-  $page_error = 'Khong tim thay thong tin tai khoan trong session.';
+    $pageError = 'Khong ket noi duoc co so du lieu.';
 } else {
-  $stmt = $pdo->prepare("SELECT giang_vien_id FROM giang_vien WHERE giang_vien_id = ? OR tai_khoan_id = ?");
-  $stmt->execute([$tai_khoan_id, $tai_khoan_id]);
-  $giang_vien = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $pdo->prepare('SELECT giang_vien_id FROM giang_vien WHERE giang_vien_id = :id OR tai_khoan_id = :id LIMIT 1');
+    $stmt->execute(['id' => $taiKhoanId]);
+    $gv = $stmt->fetch(PDO::FETCH_ASSOC);
 
-  if (!$giang_vien) {
-    $page_error = 'Giang vien khong ton tai trong he thong.';
-  } else {
-    $giang_vien_id = $giang_vien['giang_vien_id'];
-
-    if ($lhp_id === '') {
-      $page_info = 'Vui long chon lop hoc phan de nhap diem.';
+    if (!$gv) {
+        $pageError = 'Giang vien khong ton tai trong he thong.';
     } else {
-      $stmt = $pdo->prepare("SELECT lhp_id FROM lop_hoc_phan WHERE lhp_id = ? AND giang_vien_id = ?");
-      $stmt->execute([$lhp_id, $giang_vien_id]);
-      $lhp = $stmt->fetch(PDO::FETCH_ASSOC);
+        $giangVienId = (string)$gv['giang_vien_id'];
 
-      if (!$lhp) {
-        $page_error = 'Lop hoc phan khong ton tai hoac khong thuoc giang vien hien tai.';
-      } else {
-        $stmt = $pdo->prepare("
-          SELECT sv.sinh_vien_id, sv.msv, sv.ho_ten,
-               d.ds_lhp_id, d.diem_cc, d.diem_gk, d.diem_ck
-          FROM ds_lhp d
-          JOIN sinh_vien sv ON sv.sinh_vien_id = d.sinh_vien_id
-          WHERE d.lhp_id = ?
-          ORDER BY sv.ho_ten
-        ");
-        $stmt->execute([$lhp_id]);
-        $ds_sinh_vien = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $is_editable = true;
+        if ($lhpId === '') {
+            $pageInfo = 'Vui long chon lop hoc phan de nhap diem.';
+        } else {
+            $stmt = $pdo->prepare(
+                'SELECT lhp.lhp_id, lhp.ma_lhp, lhp.trang_thai, mh.ten_mon, hk.ten_hoc_ky
+                 FROM lop_hoc_phan lhp
+                 JOIN mon_hoc mh ON mh.mon_hoc_id = lhp.mon_hoc_id
+                 JOIN hoc_ky hk ON hk.hoc_ky_id = lhp.hoc_ky_id
+                 WHERE lhp.lhp_id = :lhp_id AND lhp.giang_vien_id = :gv_id
+                 LIMIT 1'
+            );
+            $stmt->execute(['lhp_id' => $lhpId, 'gv_id' => $giangVienId]);
+            $lhpInfo = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (count($ds_sinh_vien) === 0) {
-          $page_info = 'Chua co sinh vien nao trong lop hoc phan nay.';
+            if (!$lhpInfo) {
+                $pageError = 'Lop hoc phan khong ton tai hoac khong thuoc giang vien hien tai.';
+            } else {
+                $stmt = $pdo->prepare(
+                    'SELECT sv.sinh_vien_id, sv.msv, sv.ho_ten,
+                            d.ds_lhp_id, d.diem_cc, d.diem_gk, d.diem_ck
+                     FROM ds_lhp d
+                     JOIN sinh_vien sv ON sv.sinh_vien_id = d.sinh_vien_id
+                     WHERE d.lhp_id = :lhp_id
+                     ORDER BY sv.msv ASC'
+                );
+                $stmt->execute(['lhp_id' => $lhpId]);
+                $dsSinhVien = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (empty($dsSinhVien)) {
+                    $pageInfo = 'Chua co sinh vien nao trong lop hoc phan nay.';
+                }
+            }
         }
-      }
     }
-  }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="vi">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nhap diem | EduAdmin</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-  <script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "outline-variant": "#bbcac3",
-            "on-secondary-fixed": "#161d1f",
-            "surface-container-low": "#eaf5fa",
-            "on-primary": "#ffffff",
-            "surface-container": "#e4f0f4",
-            "on-background": "#131d21",
-            "on-surface": "#131d21",
-            "primary-container": "#00b894",
-            "tertiary-fixed-dim": "#a2c9ff",
-            "primary-fixed": "#6dfad2",
-            "on-tertiary": "#ffffff",
-            "on-tertiary-fixed-variant": "#004881",
-            "secondary-container": "#dae1e3",
-            "surface-variant": "#d9e4e9",
-            "primary": "#006b55",
-            "secondary-fixed-dim": "#c1c8ca",
-            "on-tertiary-fixed": "#001c38",
-            "error-container": "#ffdad6",
-            "primary-fixed-dim": "#4bddb7",
-            "on-error-container": "#93000a",
-            "on-secondary": "#ffffff",
-            "surface": "#f1fbff",
-            "on-tertiary-container": "#003a6a",
-            "surface-tint": "#006b55",
-            "on-secondary-container": "#5d6466",
-            "tertiary": "#0060a9",
-            "surface-container-high": "#dfeaef",
-            "on-surface-variant": "#3c4a44",
-            "secondary": "#586062",
-            "inverse-surface": "#283236",
-            "surface-bright": "#f1fbff",
-            "surface-dim": "#d1dce0",
-            "on-primary-container": "#004233",
-            "surface-container-lowest": "#ffffff",
-            "error": "#ba1a1a",
-            "on-primary-fixed": "#002018",
-            "inverse-primary": "#4bddb7",
-            "tertiary-fixed": "#d3e4ff",
-            "secondary-fixed": "#dde4e6",
-            "on-secondary-fixed-variant": "#41484a",
-            "inverse-on-surface": "#e7f3f7",
-            "outline": "#6c7a74",
-            "tertiary-container": "#55a6ff",
-            "on-error": "#ffffff",
-            "on-primary-fixed-variant": "#005140",
-            "surface-container-highest": "#d9e4e9",
-            "background": "#f1fbff"
-          },
-          borderRadius: {
-            DEFAULT: "0.25rem",
-            lg: "0.5rem",
-            xl: "0.75rem",
-            full: "9999px"
-          },
-          spacing: {
-            gutter: "20px",
-            base: "8px",
-            xs: "4px",
-            md: "24px",
-            sm: "12px",
-            lg: "40px",
-            margin: "32px"
-          },
-          fontFamily: {
-            "label-md": ["Inter"],
-            "display-lg": ["Manrope"],
-            "title-lg": ["Inter"],
-            "display-md": ["Manrope"],
-            "data-table": ["Inter"],
-            "body-sm": ["Inter"],
-            "body-md": ["Inter"]
-          },
-          fontSize: {
-            "label-md": ["12px", {
-              "lineHeight": "16px",
-              "letterSpacing": "0.02em",
-              "fontWeight": "500"
-            }],
-            "display-lg": ["32px", {
-              "lineHeight": "40px",
-              "fontWeight": "700"
-            }],
-            "title-lg": ["18px", {
-              "lineHeight": "28px",
-              "fontWeight": "600"
-            }],
-            "display-md": ["24px", {
-              "lineHeight": "32px",
-              "fontWeight": "600"
-            }],
-            "data-table": ["14px", {
-              "lineHeight": "20px",
-              "fontWeight": "450"
-            }],
-            "body-sm": ["13px", {
-              "lineHeight": "18px",
-              "fontWeight": "400"
-            }],
-            "body-md": ["14px", {
-              "lineHeight": "20px",
-              "fontWeight": "400"
-            }]
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhap diem</title>
+    <link rel="stylesheet" href="../../../assets/css/Background.css">
+    <link rel="stylesheet" href="../../../assets/css/components.css">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .page-stack {
+            display: grid;
+            gap: 14px;
         }
-      }
-    }
-  </script>
-  <style>
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-      vertical-align: middle;
-    }
 
-    body {
-      background-color: #f1fbff;
-    }
-  </style>
+        .section-card {
+            margin: 0;
+        }
+
+        .card-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+    </style>
 </head>
 
-<body class="font-body-md text-on-background">
-  <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
-  <main class="ml-64 min-h-screen">
-    <?php include __DIR__ . '/../layouts/header.php'; ?>
+<body>
+    <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
 
-    <div class="p-margin">
-      <div class="flex justify-between items-end mb-lg">
-        <div>
-          <h1 class="font-display-lg text-display-lg text-on-background mb-2">Nhap diem LHP</h1>
-          <p class="text-body-md text-on-surface-variant max-w-2xl">Cap nhat diem thanh phan CC, GK, CK cho sinh vien theo LHP.</p>
-        </div>
-        <button id="btn-gui-duyet" class="flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-lg font-title-lg hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50" data-lhp="<?php echo htmlspecialchars($lhp_id); ?>" type="button" <?php echo $is_editable ? '' : 'disabled'; ?>>
-          <span class="material-symbols-outlined" data-icon="check_circle">check_circle</span>
-          <span>Gui duyet LHP</span>
-        </button>
-      </div>
+    <div class="app-content">
+        <?php include __DIR__ . '/../layouts/header.php'; ?>
 
-      <?php if ($page_error !== ''): ?>
-        <div class="mb-lg rounded-xl border border-error-container bg-error-container/40 p-4 text-on-error-container">
-          <?php echo htmlspecialchars($page_error); ?>
-        </div>
-      <?php elseif ($page_info !== ''): ?>
-        <div class="mb-lg rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-4 text-on-surface-variant">
-          <?php echo htmlspecialchars($page_info); ?>
-        </div>
-      <?php endif; ?>
+        <div class="app-content-inner page-stack">
+            <div class="dashboard-header" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-end;">
+                <div>
+                    <h1>Nhap diem lop hoc phan</h1>
+                    <p class="muted-text">Cap nhat diem thanh phan va gui duyet bang diem cho giao vu.</p>
+                </div>
+                <button id="btn-gui-duyet" type="button" class="btn-primary" data-lhp="<?php echo htmlspecialchars($lhpId); ?>" <?php echo $lhpInfo ? '' : 'disabled'; ?>>Gui duyet LHP</button>
+            </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-sm mb-lg bg-white p-sm rounded-xl shadow-sm border border-outline-variant/30">
-        <div class="md:col-span-4">
-          <label class="block text-label-md font-label-md text-secondary mb-1.5 ml-1">LHP ID</label>
-          <div class="h-11 px-4 flex items-center border border-outline-variant rounded-lg text-body-md text-on-background bg-surface-container-lowest">
-            <?php echo htmlspecialchars($lhp_id); ?>
-          </div>
-        </div>
-        <div class="md:col-span-4">
-          <label class="block text-label-md font-label-md text-secondary mb-1.5 ml-1">Giang vien</label>
-          <div class="h-11 px-4 flex items-center border border-outline-variant rounded-lg text-body-md text-on-background bg-surface-container-lowest">
-            <?php echo htmlspecialchars($giang_vien_id); ?>
-          </div>
-        </div>
-        <div class="md:col-span-4 relative">
-          <label class="block text-label-md font-label-md text-secondary mb-1.5 ml-1">Tim sinh vien</label>
-          <div class="relative">
-            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
-            <input class="w-full h-11 pl-10 border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md" placeholder="Tim theo MSV hoac ten..." type="text" id="tim-sv">
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-        <table class="w-full text-left border-collapse font-data-table text-data-table" id="bang-diem">
-          <thead class="bg-slate-50/80 sticky top-0 border-b border-slate-100">
-            <tr>
-              <th class="px-6 py-4 font-semibold text-slate-700">MSV</th>
-              <th class="px-6 py-4 font-semibold text-slate-700">Ten sinh vien</th>
-              <th class="px-6 py-4 font-semibold text-slate-700">CC</th>
-              <th class="px-6 py-4 font-semibold text-slate-700">GK</th>
-              <th class="px-6 py-4 font-semibold text-slate-700">CK</th>
-              <th class="px-6 py-4 font-semibold text-slate-700 text-right">Thao tac</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-            <?php if (count($ds_sinh_vien) === 0): ?>
-              <tr>
-                <td class="px-6 py-6 text-slate-500" colspan="6">Khong co du lieu de hien thi.</td>
-              </tr>
+            <?php if ($pageError !== ''): ?>
+                <div class="alert-danger"><?php echo htmlspecialchars($pageError); ?></div>
+            <?php elseif ($pageInfo !== ''): ?>
+                <div class="alert-info"><?php echo htmlspecialchars($pageInfo); ?></div>
             <?php endif; ?>
-            <?php foreach ($ds_sinh_vien as $sv): ?>
-              <tr class="hover:bg-slate-50/50 transition-colors group" data-id="<?php echo htmlspecialchars($sv['ds_lhp_id']); ?>">
-                <td class="px-6 py-4 font-medium text-primary"><?php echo htmlspecialchars($sv['msv']); ?></td>
-                <td class="px-6 py-4 text-slate-600"><?php echo htmlspecialchars($sv['ho_ten']); ?></td>
-                <td class="px-6 py-4">
-                  <input type="number" min="0" max="10" step="0.1" class="diem-cc w-24 h-9 border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md" value="<?php echo htmlspecialchars($sv['diem_cc']); ?>">
-                </td>
-                <td class="px-6 py-4">
-                  <input type="number" min="0" max="10" step="0.1" class="diem-gk w-24 h-9 border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md" value="<?php echo htmlspecialchars($sv['diem_gk']); ?>">
-                </td>
-                <td class="px-6 py-4">
-                  <input type="number" min="0" max="10" step="0.1" class="diem-ck w-24 h-9 border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md" value="<?php echo htmlspecialchars($sv['diem_ck']); ?>">
-                </td>
-                <td class="px-6 py-4 text-right">
-                  <button class="btn-luu inline-flex items-center gap-2 px-4 py-2 rounded-lg text-body-md font-semibold text-primary border border-primary hover:bg-primary-container/10 transition-colors disabled:opacity-50" data-lhp="<?php echo htmlspecialchars($lhp_id); ?>" type="button" <?php echo $is_editable ? '' : 'disabled'; ?>>
-                    <span class="material-symbols-outlined text-[18px]" data-icon="save">save</span>
-                    Luu
-                  </button>
-                </td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
+
+            <div class="card section-card">
+                <div class="form-grid" style="grid-template-columns:repeat(4,minmax(170px,1fr));">
+                    <div>
+                        <div class="muted-text">Ma LHP</div>
+                        <div style="font-weight:700;"><?php echo htmlspecialchars((string)($lhpInfo['ma_lhp'] ?? '--')); ?></div>
+                    </div>
+                    <div>
+                        <div class="muted-text">Mon hoc</div>
+                        <div style="font-weight:700;"><?php echo htmlspecialchars((string)($lhpInfo['ten_mon'] ?? '--')); ?></div>
+                    </div>
+                    <div>
+                        <div class="muted-text">Hoc ky</div>
+                        <div style="font-weight:700;"><?php echo htmlspecialchars((string)($lhpInfo['ten_hoc_ky'] ?? '--')); ?></div>
+                    </div>
+                    <div>
+                        <div class="muted-text">Trang thai LHP</div>
+                        <div style="font-weight:700;"><?php echo htmlspecialchars((string)($lhpInfo['trang_thai'] ?? '--')); ?></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card section-card">
+                <div class="card-toolbar">
+                    <div class="form-group" style="margin:0;max-width:360px;">
+                        <label>Tim sinh vien</label>
+                        <input id="tim-sv" type="text" placeholder="Nhap MSSV hoac ho ten...">
+                    </div>
+                    <button id="btn-luu-tat-ca" type="button" class="btn-primary" data-lhp="<?php echo htmlspecialchars($lhpId); ?>" <?php echo empty($dsSinhVien) ? 'disabled' : ''; ?>>Luu toan bo diem</button>
+                </div>
+
+                <div style="overflow-x:auto;">
+                    <table class="table-modern" id="bang-diem">
+                        <thead>
+                            <tr>
+                                <th>MSSV</th>
+                                <th>Ho ten</th>
+                                <th>Diem CC</th>
+                                <th>Diem GK</th>
+                                <th>Diem CK</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($dsSinhVien)): ?>
+                                <tr>
+                                    <td colspan="5" style="text-align:center;">Khong co du lieu de hien thi.</td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($dsSinhVien as $sv): ?>
+                                    <tr data-id="<?php echo htmlspecialchars((string)$sv['ds_lhp_id']); ?>">
+                                        <td><?php echo htmlspecialchars((string)$sv['msv']); ?></td>
+                                        <td><?php echo htmlspecialchars((string)$sv['ho_ten']); ?></td>
+                                        <td><input type="number" class="diem-cc" min="0" max="10" step="0.1" value="<?php echo htmlspecialchars((string)$sv['diem_cc']); ?>"></td>
+                                        <td><input type="number" class="diem-gk" min="0" max="10" step="0.1" value="<?php echo htmlspecialchars((string)$sv['diem_gk']); ?>"></td>
+                                        <td><input type="number" class="diem-ck" min="0" max="10" step="0.1" value="<?php echo htmlspecialchars((string)$sv['diem_ck']); ?>"></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <?php include __DIR__ . '/../layouts/footer.php'; ?>
     </div>
 
-    <?php include __DIR__ . '/../layouts/footer.php'; ?>
-  </main>
+    <script>
+        const PY_API = '<?php echo rtrim(PYTHON_API_URL, '/'); ?>';
+        const taiKhoanId = '<?php echo htmlspecialchars($taiKhoanId); ?>';
 
-  <script>
-    const PY_API = '<?php echo rtrim(PYTHON_API_URL, '/'); ?>';
-
-    document.querySelectorAll('.btn-luu').forEach(btn => {
-      btn.addEventListener('click', function() {
-        const row = this.closest('tr');
-        const payload = {
-          tai_khoan_id: '<?php echo htmlspecialchars($tai_khoan_id); ?>',
-          rows: [{
-            ds_lhp_id: row.dataset.id,
-            diem_cc: parseFloat(row.querySelector('.diem-cc').value || 0),
-            diem_gk: parseFloat(row.querySelector('.diem-gk').value || 0),
-            diem_ck: parseFloat(row.querySelector('.diem-ck').value || 0)
-          }]
-        };
-
-        fetch(`${PY_API}/api/diem/lhp/${encodeURIComponent(this.dataset.lhp)}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          })
-          .then(r => r.json())
-          .then(res => {
-            if (res.success) {
-              alert('Da luu');
-            } else {
-              alert('Loi: ' + (res.message || 'Khong the luu diem'));
+        function validateScore(rawValue, label, rowIndex) {
+            const value = String(rawValue ?? '').trim();
+            if (value === '') {
+                throw new Error(`Dong ${rowIndex}: ${label} khong duoc de trong`);
             }
-          });
-      });
-    });
 
-    document.getElementById('btn-gui-duyet').addEventListener('click', function() {
-      if (!confirm('Gui duyet toan bo LHP nay?')) return;
-      fetch(`${PY_API}/api/diem/lhp/${encodeURIComponent(this.dataset.lhp)}/gui-duyet`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        })
-        .then(r => r.json())
-        .then(res => {
-          if (res.success) {
-            alert('Da gui duyet');
-          } else {
-            alert('Loi: ' + (res.message || 'Khong the gui duyet'));
-          }
-        });
-    });
+            const number = Number(value);
+            if (!Number.isFinite(number)) {
+                throw new Error(`Dong ${rowIndex}: ${label} phai la so`);
+            }
+            if (number < 0 || number > 10) {
+                throw new Error(`Dong ${rowIndex}: ${label} phai trong khoang 0-10`);
+            }
 
-    const searchInput = document.getElementById('tim-sv');
-    if (searchInput) {
-      searchInput.addEventListener('input', function() {
-        const keyword = this.value.toLowerCase();
-        document.querySelectorAll('#bang-diem tbody tr').forEach(row => {
-          const msv = row.children[0].textContent.toLowerCase();
-          const ten = row.children[1].textContent.toLowerCase();
-          row.style.display = (msv.includes(keyword) || ten.includes(keyword)) ? '' : 'none';
-        });
-      });
-    }
-  </script>
+            return Math.round(number * 10) / 10;
+        }
+
+        const btnLuuTatCa = document.getElementById('btn-luu-tat-ca');
+        if (btnLuuTatCa) {
+            btnLuuTatCa.addEventListener('click', () => {
+                const rows = Array.from(document.querySelectorAll('#bang-diem tbody tr[data-id]'));
+                if (!rows.length) return;
+
+                let payloadRows;
+                try {
+                    payloadRows = rows.map((row, index) => ({
+                        ds_lhp_id: row.dataset.id,
+                        diem_cc: validateScore(row.querySelector('.diem-cc')?.value, 'Diem CC', index + 1),
+                        diem_gk: validateScore(row.querySelector('.diem-gk')?.value, 'Diem GK', index + 1),
+                        diem_ck: validateScore(row.querySelector('.diem-ck')?.value, 'Diem CK', index + 1)
+                    }));
+                } catch (err) {
+                    alert(err.message || 'Du lieu diem khong hop le');
+                    return;
+                }
+
+                const payload = {
+                    tai_khoan_id: taiKhoanId,
+                    rows: payloadRows
+                };
+
+                fetch(`${PY_API}/api/diem/lhp/${encodeURIComponent(btnLuuTatCa.dataset.lhp)}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    })
+                    .then((r) => r.json())
+                    .then((res) => {
+                        alert(res.success ? 'Da luu toan bo diem.' : ('Loi: ' + (res.message || 'Khong the luu diem')));
+                    })
+                    .catch(() => alert('Khong the ket noi API nhap diem.'));
+            });
+        }
+
+        const btnGuiDuyet = document.getElementById('btn-gui-duyet');
+        if (btnGuiDuyet) {
+            btnGuiDuyet.addEventListener('click', () => {
+                if (!btnGuiDuyet.dataset.lhp) return;
+                if (!window.confirm('Gui duyet toan bo LHP nay?')) return;
+
+                fetch(`${PY_API}/api/diem/lhp/${encodeURIComponent(btnGuiDuyet.dataset.lhp)}/gui-duyet`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then((r) => r.json())
+                    .then((res) => {
+                        alert(res.success ? 'Da gui duyet LHP.' : ('Loi: ' + (res.message || 'Khong the gui duyet')));
+                    })
+                    .catch(() => alert('Khong the ket noi API duyet diem.'));
+            });
+        }
+
+        const searchInput = document.getElementById('tim-sv');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                const keyword = searchInput.value.toLowerCase();
+                document.querySelectorAll('#bang-diem tbody tr').forEach((row) => {
+                    const msv = (row.children[0]?.textContent || '').toLowerCase();
+                    const ten = (row.children[1]?.textContent || '').toLowerCase();
+                    row.style.display = (msv.includes(keyword) || ten.includes(keyword)) ? '' : 'none';
+                });
+            });
+        }
+    </script>
 </body>
 
 </html>

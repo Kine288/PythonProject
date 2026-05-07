@@ -4,6 +4,7 @@ from services.xuat_bao_cao import (
     lay_ds_canh_bao,
     thong_ke_xep_loai,
     xuat_excel_canh_bao,
+    xuat_excel_tong_ket_hoc_vu,
     xuat_pdf_bang_diem_ca_nhan,
 )
 
@@ -82,6 +83,28 @@ def api_export_canh_bao_excel(hoc_ky_id: str = ""):
         )
     except Exception as exc:
         return _error(f"Khong the xuat Excel: {exc}", 500)
+
+
+@bao_cao_bp.post("/export/tong-ket-excel")
+@bao_cao_bp.get("/tong-ket-excel/<hoc_ky_id>")
+def api_export_tong_ket_excel(hoc_ky_id: str = ""):
+    payload = request.get_json(silent=True) or {}
+    hoc_ky_id = hoc_ky_id or (payload.get("hoc_ky_id") or request.args.get("hoc_ky_id") or "").strip()
+    lop_id = (payload.get("lop_id") or request.args.get("lop_id") or "").strip() or None
+
+    if not hoc_ky_id:
+        return _error("Thieu hoc_ky_id")
+
+    try:
+        file_path = xuat_excel_tong_ket_hoc_vu(hoc_ky_id, lop_id)
+        return send_file(
+            file_path,
+            as_attachment=True,
+            download_name=f"tong_ket_hoc_vu_{hoc_ky_id}.xlsx",
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    except Exception as exc:
+        return _error(f"Khong the xuat Excel tong ket: {exc}", 500)
 
 
 @bao_cao_bp.post("/export/bang-diem-pdf")

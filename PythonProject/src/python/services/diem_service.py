@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from decimal import Decimal, ROUND_HALF_UP
 import json
+import math
 import uuid
 from typing import Dict, List
 
 from core.database import db_cursor, execute_transaction
+from services.gpa_service import br2_quy_doi
 
 
 def _new_id() -> str:
@@ -16,6 +18,31 @@ def _to_decimal(value) -> Decimal:
     if value is None:
         return Decimal("0")
     return Decimal(str(value))
+
+
+def _json_number(value):
+    if value is None:
+        return None
+    if isinstance(value, Decimal):
+        return float(value)
+    return value
+
+
+def _validate_score(value, field_name: str) -> Decimal:
+    if value is None or value == "":
+        raise ValueError(f"{field_name} khong duoc de trong")
+
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{field_name} phai la so") from exc
+
+    if not math.isfinite(number):
+        raise ValueError(f"{field_name} phai la so hop le")
+    if number < 0 or number > 10:
+        raise ValueError(f"{field_name} phai trong khoang 0-10")
+
+    return Decimal(str(number)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
 
 
 def br1_tinh_diem_tong(diem_cc, diem_gk, diem_ck, ty_le_cc, ty_le_gk, ty_le_ck) -> Decimal:
@@ -57,7 +84,21 @@ def lay_bang_diem_lhp(lhp_id: str) -> List[Dict]:
             """,
             (lhp_id,),
         )
-        return cursor.fetchall()
+        rows = cursor.fetchall()
+
+    # Use centralized BR2 conversion from gpa_service for subject grade display.
+    for row in rows:
+        diem_tong = row.get("diem_tong")
+        if diem_tong is None:
+            row["diem_chu"] = None
+            row["diem_he_4"] = None
+            continue
+
+        diem_chu, diem_he4 = br2_quy_doi(diem_tong)
+        row["diem_chu"] = diem_chu
+        row["diem_he_4"] = float(diem_he4)
+
+    return rows
 
 
 def luu_nhap_diem_lhp(lhp_id: str, tai_khoan_id: str, rows: List[Dict], ly_do: str = "") -> Dict:
@@ -65,9 +106,12 @@ def luu_nhap_diem_lhp(lhp_id: str, tai_khoan_id: str, rows: List[Dict], ly_do: s
         raise ValueError("Danh sach diem rong")
 
     def _tx(cursor):
-        cursor.execute("SELECT lhp_id FROM lop_hoc_phan WHERE lhp_id = %s LIMIT 1", (lhp_id,))
-        if cursor.fetchone() is None:
+        cursor.execute("SELECT lhp_id, trang_thai FROM lop_hoc_phan WHERE lhp_id = %s LIMIT 1", (lhp_id,))
+        lhp = cursor.fetchone()
+        if lhp is None:
             raise ValueError("Khong tim thay LHP")
+        if lhp["trang_thai"] in {"DA_DUYET", "DONG"}:
+            raise ValueError("LHP da khoa diem, khong the cap nhat")
 
         updated = 0
         for item in rows:
@@ -75,9 +119,9 @@ def luu_nhap_diem_lhp(lhp_id: str, tai_khoan_id: str, rows: List[Dict], ly_do: s
             if not ds_lhp_id:
                 raise ValueError("Thieu ds_lhp_id")
 
-            diem_cc = item.get("diem_cc")
-            diem_gk = item.get("diem_gk")
-            diem_ck = item.get("diem_ck")
+            diem_cc = _validate_score(item.get("diem_cc"), "Diem CC")
+            diem_gk = _validate_score(item.get("diem_gk"), "Diem GK")
+            diem_ck = _validate_score(item.get("diem_ck"), "Diem CK")
 
             cursor.execute(
                 """
@@ -101,10 +145,10 @@ def luu_nhap_diem_lhp(lhp_id: str, tai_khoan_id: str, rows: List[Dict], ly_do: s
                     trang_thai_diem = 'NHAP_NHAP'
                 WHERE ds_lhp_id = %s
                 """,
-                (diem_cc, diem_gk, diem_ck, ds_lhp_id),
+                (float(diem_cc), float(diem_gk), float(diem_ck), ds_lhp_id),
             )
 
-            after = {"diem_cc": diem_cc, "diem_gk": diem_gk, "diem_ck": diem_ck}
+            after = {"diem_cc": float(diem_cc), "diem_gk": float(diem_gk), "diem_ck": float(diem_ck)}
             cursor.execute(
                 """
                 INSERT INTO audit_diem
@@ -115,7 +159,13 @@ def luu_nhap_diem_lhp(lhp_id: str, tai_khoan_id: str, rows: List[Dict], ly_do: s
                     _new_id(),
                     ds_lhp_id,
                     tai_khoan_id,
-                    json.dumps({"diem_cc": before["diem_cc"], "diem_gk": before["diem_gk"], "diem_ck": before["diem_ck"]}),
+                    json.dumps(
+                        {
+                            "diem_cc": _json_number(before["diem_cc"]),
+                            "diem_gk": _json_number(before["diem_gk"]),
+                            "diem_ck": _json_number(before["diem_ck"]),
+                        }
+                    ),
                     json.dumps(after),
                     ly_do or "Luu nhap diem",
                 ),
@@ -131,11 +181,19 @@ def luu_nhap_diem_lhp(lhp_id: str, tai_khoan_id: str, rows: List[Dict], ly_do: s
 def gui_duyet_lhp(lhp_id: str) -> Dict:
     def _tx(cursor):
         cursor.execute(
+            "SELECT trang_thai FROM lop_hoc_phan WHERE lhp_id = %s LIMIT 1",
+            (lhp_id,),
+        )
+        lhp = cursor.fetchone()
+        if lhp is None:
+            raise ValueError("Khong tim thay LHP")
+        if lhp["trang_thai"] in {"DA_DUYET", "DONG"}:
+            raise ValueError("LHP da duoc duyet hoac da dong")
+
+        cursor.execute(
             "UPDATE lop_hoc_phan SET trang_thai = 'CHO_DUYET' WHERE lhp_id = %s",
             (lhp_id,),
         )
-        if cursor.rowcount == 0:
-            raise ValueError("Khong tim thay LHP")
 
     execute_transaction(_tx)
     return {"success": True, "message": "Da gui duyet"}
@@ -158,7 +216,7 @@ def duyet_lhp_va_tinh_diem(lhp_id: str, tai_khoan_id: str) -> Dict:
     def _tx(cursor):
         cursor.execute(
             """
-            SELECT ty_le_cc, ty_le_gk, ty_le_ck
+            SELECT ty_le_cc, ty_le_gk, ty_le_ck, hoc_ky_id
             FROM lop_hoc_phan
             WHERE lhp_id = %s
             LIMIT 1
@@ -217,7 +275,7 @@ def duyet_lhp_va_tinh_diem(lhp_id: str, tai_khoan_id: str) -> Dict:
                     _new_id(),
                     row["ds_lhp_id"],
                     tai_khoan_id,
-                    json.dumps({"diem_tong": row["diem_tong"]}),
+                    json.dumps({"diem_tong": _json_number(row["diem_tong"])}),
                     json.dumps({"diem_tong": float(diem_tong)}),
                     "Duyet diem LHP",
                 ),
@@ -234,7 +292,7 @@ def duyet_lhp_va_tinh_diem(lhp_id: str, tai_khoan_id: str) -> Dict:
             (lhp_id,),
         )
 
-        return {"so_luong": count}
+        return {"so_luong": count, "hoc_ky_id": lhp["hoc_ky_id"]}
 
     result = execute_transaction(_tx)
     return {"success": True, **result}
@@ -277,13 +335,28 @@ def xu_ly_yeu_cau_sua(yc_id: str, giao_vu_id: str, chap_thuan: bool, ghi_chu: st
     def _tx(cursor):
         cursor.execute(
             """
+            SELECT giao_vu_id
+            FROM giao_vu
+            WHERE giao_vu_id = %s OR tai_khoan_id = %s
+            LIMIT 1
+            """,
+            (giao_vu_id, giao_vu_id),
+        )
+        row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Khong tim thay ho so giao vu")
+
+        giao_vu_profile_id = row["giao_vu_id"]
+
+        cursor.execute(
+            """
             UPDATE yeu_cau_sua_diem
             SET trang_thai = %s,
                 giao_vu_xu_ly = %s,
                 ghi_chu_giao_vu = %s
             WHERE yc_id = %s
             """,
-            (trang_thai, giao_vu_id, ghi_chu, yc_id),
+            (trang_thai, giao_vu_profile_id, ghi_chu, yc_id),
         )
         if cursor.rowcount == 0:
             raise ValueError("Khong tim thay yeu cau")

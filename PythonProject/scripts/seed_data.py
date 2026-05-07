@@ -50,19 +50,38 @@ IDS = {
 		"CNTT-K5": "23000000000000000000000000000004",
 	},
 	"tai_khoan": {
-		"admin": "24000000000000000000000000000001",
+		"admin1": "24000000000000000000000000000001",
+		"admin2": "24000000000000000000000000000004",
 		"giaovu1": "24000000000000000000000000000002",
 		"giaovu2": "24000000000000000000000000000003",
+		"giaovu3": "24000000000000000000000000000005",
 		"gv01": "24000000000000000000000000000011",
 		"gv02": "24000000000000000000000000000012",
 		"gv03": "24000000000000000000000000000013",
 		"gv04": "24000000000000000000000000000014",
+		"gv05": "24000000000000000000000000000015",
+		"gv06": "24000000000000000000000000000016",
+		"gv07": "24000000000000000000000000000017",
+		"gv08": "24000000000000000000000000000018",
+		"gv09": "24000000000000000000000000000019",
+		"gv10": "24000000000000000000000000000020",
 	},
 	"giang_vien": {
 		"gv01": "25000000000000000000000000000001",
 		"gv02": "25000000000000000000000000000002",
 		"gv03": "25000000000000000000000000000003",
 		"gv04": "25000000000000000000000000000004",
+		"gv05": "25000000000000000000000000000005",
+		"gv06": "25000000000000000000000000000006",
+		"gv07": "25000000000000000000000000000007",
+		"gv08": "25000000000000000000000000000008",
+		"gv09": "25000000000000000000000000000009",
+		"gv10": "25000000000000000000000000000010",
+	},
+	"giao_vu": {
+		"gvu01": "25500000000000000000000000000001",
+		"gvu02": "25500000000000000000000000000002",
+		"gvu03": "25500000000000000000000000000003",
 	},
 	"mon_hoc": {
 		"CNTT101": "26000000000000000000000000000001",
@@ -170,13 +189,21 @@ def seed_catalog(cursor) -> None:
 
 def seed_accounts_and_staff(cursor) -> Dict[str, str]:
 	account_rows = [
-		(IDS["tai_khoan"]["admin"], "admin@khoa.edu.vn", hash_password("Admin@123"), "ADMIN", True),
-		(IDS["tai_khoan"]["giaovu1"], "giaovu1@khoa.edu.vn", hash_password("GiaoVu@123"), "GIAO_VU", True),
-		(IDS["tai_khoan"]["giaovu2"], "giaovu2@khoa.edu.vn", hash_password("GiaoVu@123"), "GIAO_VU", True),
-		(IDS["tai_khoan"]["gv01"], "gv01@khoa.edu.vn", hash_password("GiangVien@123"), "GIANG_VIEN", True),
-		(IDS["tai_khoan"]["gv02"], "gv02@khoa.edu.vn", hash_password("GiangVien@123"), "GIANG_VIEN", True),
-		(IDS["tai_khoan"]["gv03"], "gv03@khoa.edu.vn", hash_password("GiangVien@123"), "GIANG_VIEN", True),
-		(IDS["tai_khoan"]["gv04"], "gv04@khoa.edu.vn", hash_password("GiangVien@123"), "GIANG_VIEN", True),
+		(IDS["tai_khoan"]["admin1"], "admin1@qlsv.edu.vn", hash_password("1"), "ADMIN", True),
+		(IDS["tai_khoan"]["admin2"], "admin2@qlsv.edu.vn", hash_password("1"), "ADMIN", True),
+		(IDS["tai_khoan"]["giaovu1"], "giaovu1@qlsv.edu.vn", hash_password("1"), "GIAO_VU", True),
+		(IDS["tai_khoan"]["giaovu2"], "giaovu2@qlsv.edu.vn", hash_password("1"), "GIAO_VU", True),
+		(IDS["tai_khoan"]["giaovu3"], "giaovu3@qlsv.edu.vn", hash_password("1"), "GIAO_VU", True),
+		(IDS["tai_khoan"]["gv01"], "gv01@qlsv.edu.vn", hash_password("1"), "GIANG_VIEN", True),
+		(IDS["tai_khoan"]["gv02"], "gv02@qlsv.edu.vn", hash_password("1"), "GIANG_VIEN", True),
+		(IDS["tai_khoan"]["gv03"], "gv03@qlsv.edu.vn", hash_password("1"), "GIANG_VIEN", True),
+		(IDS["tai_khoan"]["gv04"], "gv04@qlsv.edu.vn", hash_password("1"), "GIANG_VIEN", True),
+		(IDS["tai_khoan"]["gv05"], "gv05@qlsv.edu.vn", hash_password("1"), "GIANG_VIEN", True),
+		(IDS["tai_khoan"]["gv06"], "gv06@qlsv.edu.vn", hash_password("1"), "GIANG_VIEN", True),
+		(IDS["tai_khoan"]["gv07"], "gv07@qlsv.edu.vn", hash_password("1"), "GIANG_VIEN", True),
+		(IDS["tai_khoan"]["gv08"], "gv08@qlsv.edu.vn", hash_password("1"), "GIANG_VIEN", True),
+		(IDS["tai_khoan"]["gv09"], "gv09@qlsv.edu.vn", hash_password("1"), "GIANG_VIEN", True),
+		(IDS["tai_khoan"]["gv10"], "gv10@qlsv.edu.vn", hash_password("1"), "GIANG_VIEN", True),
 	]
 
 	for row in account_rows:
@@ -190,11 +217,36 @@ def seed_accounts_and_staff(cursor) -> Dict[str, str]:
 			row,
 		)
 
+	giao_vu_rows = [
+		(IDS["giao_vu"]["gvu01"], IDS["tai_khoan"]["giaovu1"], "GVU01", "Giao vu 01", IDS["khoa_cntt"], "0909000001"),
+		(IDS["giao_vu"]["gvu02"], IDS["tai_khoan"]["giaovu2"], "GVU02", "Giao vu 02", IDS["khoa_cntt"], "0909000002"),
+		(IDS["giao_vu"]["gvu03"], IDS["tai_khoan"]["giaovu3"], "GVU03", "Giao vu 03", IDS["khoa_cntt"], "0909000003"),
+	]
+	for row in giao_vu_rows:
+		upsert(
+			cursor,
+			"""
+			INSERT INTO giao_vu (giao_vu_id, tai_khoan_id, ma_giao_vu, ho_ten, khoa_id, so_dien_thoai)
+			VALUES (%s, %s, %s, %s, %s, %s)
+			ON DUPLICATE KEY UPDATE
+				ho_ten = VALUES(ho_ten),
+				khoa_id = VALUES(khoa_id),
+				so_dien_thoai = VALUES(so_dien_thoai)
+			""",
+			row,
+		)
+
 	giang_vien_rows = [
 		(IDS["giang_vien"]["gv01"], IDS["tai_khoan"]["gv01"], "gv01", "Giang vien 01", "Thac si", None, IDS["khoa_cntt"], "0911000001"),
 		(IDS["giang_vien"]["gv02"], IDS["tai_khoan"]["gv02"], "gv02", "Giang vien 02", "Thac si", None, IDS["khoa_cntt"], "0911000002"),
 		(IDS["giang_vien"]["gv03"], IDS["tai_khoan"]["gv03"], "gv03", "Giang vien 03", "Tien si", None, IDS["khoa_cntt"], "0911000003"),
 		(IDS["giang_vien"]["gv04"], IDS["tai_khoan"]["gv04"], "gv04", "Giang vien 04", "Tien si", None, IDS["khoa_cntt"], "0911000004"),
+		(IDS["giang_vien"]["gv05"], IDS["tai_khoan"]["gv05"], "gv05", "Giang vien 05", "Thac si", None, IDS["khoa_cntt"], "0911000005"),
+		(IDS["giang_vien"]["gv06"], IDS["tai_khoan"]["gv06"], "gv06", "ThS giang vien 06", "Thac si", None, IDS["khoa_cntt"], "0911000006"),
+		(IDS["giang_vien"]["gv07"], IDS["tai_khoan"]["gv07"], "gv07", "Tien si giang vien 07", "Tien si", None, IDS["khoa_cntt"], "0911000007"),
+		(IDS["giang_vien"]["gv08"], IDS["tai_khoan"]["gv08"], "gv08", "Giang vien 08", "Thac si", None, IDS["khoa_cntt"], "0911000008"),
+		(IDS["giang_vien"]["gv09"], IDS["tai_khoan"]["gv09"], "gv09", "Giang vien 09", "Tien si", None, IDS["khoa_cntt"], "0911000009"),
+		(IDS["giang_vien"]["gv10"], IDS["tai_khoan"]["gv10"], "gv10", "Giang vien 10", "Thac si", None, IDS["khoa_cntt"], "0911000010"),
 	]
 	for row in giang_vien_rows:
 		upsert(
@@ -212,20 +264,26 @@ def seed_accounts_and_staff(cursor) -> Dict[str, str]:
 		"gv02": IDS["giang_vien"]["gv02"],
 		"gv03": IDS["giang_vien"]["gv03"],
 		"gv04": IDS["giang_vien"]["gv04"],
+		"gv05": IDS["giang_vien"]["gv05"],
+		"gv06": IDS["giang_vien"]["gv06"],
+		"gv07": IDS["giang_vien"]["gv07"],
+		"gv08": IDS["giang_vien"]["gv08"],
+		"gv09": IDS["giang_vien"]["gv09"],
+		"gv10": IDS["giang_vien"]["gv10"],
 	}
 
 
 def build_students() -> List[Dict[str, str]]:
 	students: List[Dict[str, str]] = []
 	classes = [
-		("CNTT-K2", "725101"),
-		("CNTT-K3", "735101"),
-		("CNTT-K4", "745101"),
-		("CNTT-K5", "755101"),
+		("CNTT-K2", "725101", 8),
+		("CNTT-K3", "735101", 8),
+		("CNTT-K4", "745101", 7),
+		("CNTT-K5", "755101", 7),
 	]
 	index = 1
-	for class_name, prefix in classes:
-		for i in range(1, 6):
+	for class_name, prefix, count in classes:
+		for i in range(1, count + 1):
 			msv = f"{prefix}{i:03d}"
 			students.append(
 				{
@@ -507,7 +565,7 @@ def seed_admin_logs(cursor) -> None:
 		""",
 		(
 			"38000000000000000000000000000001",
-			IDS["tai_khoan"]["admin"],
+			IDS["tai_khoan"]["admin1"],
 			"SEED_INITIAL_DATA",
 			"SYSTEM",
 			"INITIAL",
@@ -533,7 +591,7 @@ def main() -> None:
 			seed_admin_logs(cursor)
 
 		conn.commit()
-		print("Seed data thanh cong: 1 admin, 2 giao vu, 4 giang vien, 20 sinh vien, 4 LHP.")
+		print("Seed data thanh cong: 2 admin, 3 giao vu, 10 giang vien, 30 sinh vien, 4 LHP.")
 	except Exception:
 		conn.rollback()
 		raise

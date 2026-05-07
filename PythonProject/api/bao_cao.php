@@ -78,6 +78,16 @@ switch ($action) {
         ]);
         break;
 
+    case 'xuat_excel_tong_ket':
+        $hocKyId = $_GET['hoc_ky_id'] ?? ($input['hoc_ky_id'] ?? '');
+        $lopId = $_GET['lop_id'] ?? ($input['lop_id'] ?? '');
+        $query = ['hoc_ky_id' => $hocKyId];
+        if ($lopId !== '') {
+            $query['lop_id'] = $lopId;
+        }
+        $response = baoCaoProxyRequest('GET', '/tong-ket-excel/' . $hocKyId, null, $query);
+        break;
+
     case 'xuat_pdf_bang_diem':
         $response = baoCaoProxyRequest('POST', '/export/bang-diem-pdf', [
             'sinh_vien_id' => $input['sinh_vien_id'] ?? '',

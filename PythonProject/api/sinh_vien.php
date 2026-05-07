@@ -86,6 +86,12 @@ if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'])) {
             sinhVienProxyRespond(sinhVienProxyRequest('PUT', '/sinh-vien/' . ($input['sinh_vien_id'] ?? ''), $input));
             break;
 
+        case 'delete_student':
+            sinhVienProxyRespond(sinhVienProxyRequest('DELETE', '/sinh-vien/' . ($input['sinh_vien_id'] ?? ''), [
+                'nguoi_thay_doi' => $input['nguoi_thay_doi'] ?? '',
+            ]));
+            break;
+
         case 'get_transcript':
             sinhVienProxyRespond(sinhVienProxyRequest('GET', '/sinh-vien/' . ($_GET['id'] ?? '') . '/bang-diem', null, [
                 'hoc_ky_id' => $_GET['hoc_ky_id'] ?? '',

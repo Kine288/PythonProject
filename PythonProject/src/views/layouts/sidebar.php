@@ -17,11 +17,11 @@ $menuByRole = [
     'GIAO_VU' => [
         ['label' => 'Dashboard', 'icon' => 'dashboard', 'href' => $baseUrl . '/src/views/giao_vu/dashboard.php'],
         ['label' => 'Danh muc co so', 'icon' => 'folder_open', 'href' => $baseUrl . '/src/views/giao_vu/danh_muc.php'],
+        ['label' => 'Danh muc mon hoc', 'icon' => 'library_books', 'href' => $baseUrl . '/src/views/giao_vu/danh_muc_mon_hoc.php'],
         ['label' => 'Sinh vien', 'icon' => 'group', 'href' => $baseUrl . '/src/views/giao_vu/sinh_vien/danh_sach.php'],
-        ['label' => 'Lop hoc phan', 'icon' => 'class', 'href' => $baseUrl . '/src/views/giao_vu/duyet_diem.php'],
         ['label' => 'Duyet diem', 'icon' => 'fact_check', 'href' => $baseUrl . '/src/views/giao_vu/duyet_diem.php'],
         ['label' => 'Tong ket hoc vu', 'icon' => 'analytics', 'href' => $baseUrl . '/src/views/giao_vu/tong_ket_hoc_vu.php'],
-        ['label' => 'Bao cao', 'icon' => 'summarize', 'href' => $baseUrl . '/src/views/giao_vu/bao_cao/canh_bao.php'],
+        ['label' => 'Canh bao hoc vu', 'icon' => 'summarize', 'href' => $baseUrl . '/src/views/giao_vu/bao_cao/canh_bao.php'],
     ],
     'GIANG_VIEN' => [
         ['label' => 'Lop phu trach', 'icon' => 'class', 'href' => $baseUrl . '/src/views/giang_vien/lop_hoc_phan.php'],
@@ -67,8 +67,9 @@ function sidebarRoleLabel(string $role): string
         display: flex;
         flex-direction: column;
         z-index: 100;
-        box-shadow: 2px 0 8px rgba(0,0,0,0.02);
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.02);
     }
+
     .sidebar-brand {
         padding: 20px 24px;
         display: flex;
@@ -76,6 +77,7 @@ function sidebarRoleLabel(string $role): string
         gap: 12px;
         border-bottom: 1px solid #e2e8f0;
     }
+
     .brand-icon {
         width: 40px;
         height: 40px;
@@ -88,19 +90,23 @@ function sidebarRoleLabel(string $role): string
         font-weight: bold;
         font-size: 16px;
     }
+
     .brand-text {
         display: flex;
         flex-direction: column;
     }
+
     .brand-title {
         font-weight: 700;
         color: #0f766e;
         font-size: 16px;
     }
+
     .brand-subtitle {
         font-size: 12px;
         color: #64748b;
     }
+
     .sidebar-nav {
         padding: 20px 12px;
         flex-grow: 1;
@@ -109,6 +115,7 @@ function sidebarRoleLabel(string $role): string
         flex-direction: column;
         gap: 4px;
     }
+
     .nav-link {
         display: flex;
         align-items: center;
@@ -120,14 +127,17 @@ function sidebarRoleLabel(string $role): string
         font-weight: 500;
         transition: all 0.2s ease;
     }
+
     .nav-link:hover {
         background: #f1f5f9;
         color: #0d9488;
     }
+
     .nav-link.active {
         background: #ccfbf1;
         color: #0f766e;
     }
+
     .sidebar-footer {
         padding: 20px 16px;
         border-top: 1px solid #e2e8f0;
@@ -135,7 +145,10 @@ function sidebarRoleLabel(string $role): string
         flex-direction: column;
         gap: 8px;
     }
-    .support-button, .account-button, .logout-button {
+
+    .support-button,
+    .account-button,
+    .logout-button {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -149,12 +162,36 @@ function sidebarRoleLabel(string $role): string
         font-size: 14px;
         transition: all 0.2s;
     }
-    .support-button { background: #0f766e; color: #fff; width: 100%; }
-    .support-button:hover { background: #0d9488; }
-    .account-button { background: #ecfdf5; color: #047857; }
-    .account-button:hover { background: #d1fae5; }
-    .logout-button { background: transparent; color: #64748b; margin-top: 4px; }
-    .logout-button:hover { color: #ef4444; background: #fee2e2; }
+
+    .support-button {
+        background: #0f766e;
+        color: #fff;
+        width: 100%;
+    }
+
+    .support-button:hover {
+        background: #0d9488;
+    }
+
+    .account-button {
+        background: #ecfdf5;
+        color: #047857;
+    }
+
+    .account-button:hover {
+        background: #d1fae5;
+    }
+
+    .logout-button {
+        background: transparent;
+        color: #64748b;
+        margin-top: 4px;
+    }
+
+    .logout-button:hover {
+        color: #ef4444;
+        background: #fee2e2;
+    }
 </style>
 
 <aside class="app-sidebar">
@@ -180,10 +217,7 @@ function sidebarRoleLabel(string $role): string
     </nav>
 
     <div class="sidebar-footer">
-        <button class="support-button" type="button">
-            <span class="material-symbols-outlined">help</span>
-            <span>Tro giup</span>
-        </button>
+
         <a class="account-button" href="<?php echo htmlspecialchars($baseUrl . '/src/views/auth/doi_mat_khau.php'); ?>">
             <span class="material-symbols-outlined">lock_reset</span>
             <span>Doi mat khau</span>

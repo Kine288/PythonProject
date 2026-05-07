@@ -121,19 +121,30 @@ def create_sinh_vien_admin(payload: Dict) -> Dict:
 
 
 def update_sinh_vien_hoc_vu(sinh_vien_id: str, payload: Dict) -> Dict:
+    ho_ten = payload.get("ho_ten")
+    ngay_sinh = payload.get("ngay_sinh")
+    gioi_tinh = payload.get("gioi_tinh")
     lop_id = payload.get("lop_id")
     trang_thai = payload.get("trang_thai")
     nguoi_thay_doi = (payload.get("nguoi_thay_doi") or "").strip()
 
     with db_cursor() as (_, cursor):
         cursor.execute(
-            "SELECT sinh_vien_id, lop_id, trang_thai FROM sinh_vien WHERE sinh_vien_id = %s LIMIT 1",
+            """
+            SELECT sinh_vien_id, ho_ten, ngay_sinh, gioi_tinh, lop_id, trang_thai
+            FROM sinh_vien
+            WHERE sinh_vien_id = %s
+            LIMIT 1
+            """,
             (sinh_vien_id,),
         )
         old = cursor.fetchone()
         if old is None:
             raise ValueError("Khong tim thay sinh vien")
 
+    new_ho_ten = ho_ten if ho_ten is not None else old["ho_ten"]
+    new_ngay_sinh = ngay_sinh if ngay_sinh is not None else old["ngay_sinh"]
+    new_gioi_tinh = gioi_tinh if gioi_tinh is not None else old["gioi_tinh"]
     new_lop_id = lop_id if lop_id is not None else old["lop_id"]
     new_trang_thai = trang_thai if trang_thai is not None else old["trang_thai"]
 
@@ -141,11 +152,14 @@ def update_sinh_vien_hoc_vu(sinh_vien_id: str, payload: Dict) -> Dict:
         cursor.execute(
             """
             UPDATE sinh_vien
-            SET lop_id = %s,
+            SET ho_ten = %s,
+                ngay_sinh = %s,
+                gioi_tinh = %s,
+                lop_id = %s,
                 trang_thai = %s
             WHERE sinh_vien_id = %s
             """,
-            (new_lop_id, new_trang_thai, sinh_vien_id),
+            (new_ho_ten, new_ngay_sinh, new_gioi_tinh, new_lop_id, new_trang_thai, sinh_vien_id),
         )
 
         if nguoi_thay_doi:
@@ -158,13 +172,82 @@ def update_sinh_vien_hoc_vu(sinh_vien_id: str, payload: Dict) -> Dict:
                     _new_id(),
                     sinh_vien_id,
                     nguoi_thay_doi,
-                    json.dumps({"lop_id": old["lop_id"], "trang_thai": old["trang_thai"]}),
-                    json.dumps({"lop_id": new_lop_id, "trang_thai": new_trang_thai}),
+                    json.dumps(
+                        {
+                            "ho_ten": old["ho_ten"],
+                            "ngay_sinh": str(old["ngay_sinh"]) if old["ngay_sinh"] is not None else None,
+                            "gioi_tinh": old["gioi_tinh"],
+                            "lop_id": old["lop_id"],
+                            "trang_thai": old["trang_thai"],
+                        }
+                    ),
+                    json.dumps(
+                        {
+                            "ho_ten": new_ho_ten,
+                            "ngay_sinh": str(new_ngay_sinh) if new_ngay_sinh is not None else None,
+                            "gioi_tinh": new_gioi_tinh,
+                            "lop_id": new_lop_id,
+                            "trang_thai": new_trang_thai,
+                            "ly_do": payload.get("ly_do"),
+                        }
+                    ),
                 ),
             )
 
     execute_transaction(_tx)
     return get_sinh_vien(sinh_vien_id) or {}
+
+
+def delete_sinh_vien(sinh_vien_id: str, nguoi_thay_doi: str = "") -> Dict:
+    with db_cursor() as (_, cursor):
+        cursor.execute(
+            """
+            SELECT sv.sinh_vien_id, sv.tai_khoan_id, sv.msv
+            FROM sinh_vien sv
+            WHERE sv.sinh_vien_id = %s
+            LIMIT 1
+            """,
+            (sinh_vien_id,),
+        )
+        sv = cursor.fetchone()
+        if sv is None:
+            raise ValueError("Khong tim thay sinh vien")
+
+        cursor.execute(
+            "SELECT COUNT(*) AS total FROM ds_lhp WHERE sinh_vien_id = %s",
+            (sinh_vien_id,),
+        )
+        in_lhp = int((cursor.fetchone() or {"total": 0})["total"] or 0)
+        if in_lhp > 0:
+            raise ValueError("Sinh vien da co lich su hoc tap/LHP, khong the xoa")
+
+    tai_khoan_id = sv["tai_khoan_id"]
+    msv = sv["msv"]
+
+    def _tx(cursor):
+        cursor.execute("DELETE FROM lich_su_ho_so WHERE sinh_vien_id = %s", (sinh_vien_id,))
+        cursor.execute("DELETE FROM ket_qua_hoc_ky WHERE sinh_vien_id = %s", (sinh_vien_id,))
+        cursor.execute("DELETE FROM sinh_vien WHERE sinh_vien_id = %s", (sinh_vien_id,))
+        cursor.execute("DELETE FROM tai_khoan WHERE tai_khoan_id = %s", (tai_khoan_id,))
+
+        if nguoi_thay_doi:
+            cursor.execute(
+                """
+                INSERT INTO admin_log (log_id, tai_khoan_id, hanh_dong, doi_tuong_loai, doi_tuong_id, du_lieu)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    _new_id(),
+                    nguoi_thay_doi,
+                    "DELETE_STUDENT_ACCOUNT",
+                    "SINH_VIEN",
+                    sinh_vien_id,
+                    json.dumps({"msv": msv}),
+                ),
+            )
+
+    execute_transaction(_tx)
+    return {"success": True, "sinh_vien_id": sinh_vien_id}
 
 
 def bang_diem_sinh_vien(sinh_vien_id: str, hoc_ky_id: str = "") -> Dict:
@@ -215,18 +298,20 @@ def list_tai_khoan(keyword: str = "", vai_tro: str = "", is_active=None) -> List
     sql = """
         SELECT tk.tai_khoan_id, tk.email, tk.vai_tro, tk.is_active, tk.lan_dang_nhap_cuoi,
                sv.ho_ten AS ten_sinh_vien,
-               gv.ho_ten AS ten_giang_vien
+               gv.ho_ten AS ten_giang_vien,
+               gvu.ho_ten AS ten_giao_vu
         FROM tai_khoan tk
         LEFT JOIN sinh_vien sv ON sv.tai_khoan_id = tk.tai_khoan_id
         LEFT JOIN giang_vien gv ON gv.tai_khoan_id = tk.tai_khoan_id
+        LEFT JOIN giao_vu gvu ON gvu.tai_khoan_id = tk.tai_khoan_id
         WHERE 1 = 1
     """
     params: List = []
 
     if keyword:
         kw = f"%{keyword}%"
-        sql += " AND (tk.email LIKE %s OR sv.ho_ten LIKE %s OR gv.ho_ten LIKE %s)"
-        params.extend([kw, kw, kw])
+        sql += " AND (tk.email LIKE %s OR sv.ho_ten LIKE %s OR gv.ho_ten LIKE %s OR gvu.ho_ten LIKE %s)"
+        params.extend([kw, kw, kw, kw])
     if vai_tro:
         sql += " AND tk.vai_tro = %s"
         params.append(vai_tro)
@@ -369,9 +454,14 @@ def list_lhp_students(lhp_id: str) -> List[Dict]:
         cursor.execute(
             """
             SELECT ds.ds_lhp_id, sv.sinh_vien_id, sv.msv, sv.ho_ten,
+                   lsh.ma_lop, lsh.ten_lop,
+                   mh.ma_mon, mh.ten_mon,
                    ds.diem_cc, ds.diem_gk, ds.diem_ck, ds.diem_tong, ds.trang_thai_diem
             FROM ds_lhp ds
             JOIN sinh_vien sv ON sv.sinh_vien_id = ds.sinh_vien_id
+            LEFT JOIN lop_sinh_hoat lsh ON lsh.lop_id = sv.lop_id
+            JOIN lop_hoc_phan lhp ON lhp.lhp_id = ds.lhp_id
+            JOIN mon_hoc mh ON mh.mon_hoc_id = lhp.mon_hoc_id
             WHERE ds.lhp_id = %s
             ORDER BY sv.msv ASC
             """,
@@ -385,6 +475,23 @@ def add_student_to_lhp(lhp_id: str, sinh_vien_id: str) -> Dict:
     ls_id = _new_id()
 
     def _tx(cursor):
+        cursor.execute(
+            """
+            SELECT trang_thai, msv, ho_ten
+            FROM sinh_vien
+            WHERE sinh_vien_id = %s
+            LIMIT 1
+            """,
+            (sinh_vien_id,),
+        )
+        sv = cursor.fetchone()
+        if sv is None:
+            raise ValueError("Khong tim thay sinh vien")
+        if sv["trang_thai"] == "BUOC_THOI_HOC":
+            raise ValueError(
+                f"Sinh vien {sv['msv']} - {sv['ho_ten']} da bi BUOC_THOI_HOC, khong duoc them vao LHP"
+            )
+
         cursor.execute(
             """
             SELECT mon_hoc_id, hoc_ky_id
@@ -430,6 +537,29 @@ def add_student_to_lhp(lhp_id: str, sinh_vien_id: str) -> Dict:
 
 def remove_student_from_lhp(lhp_id: str, sinh_vien_id: str) -> Dict:
     def _tx(cursor):
+        cursor.execute(
+            """
+            SELECT ds_lhp_id
+            FROM ds_lhp
+            WHERE lhp_id = %s AND sinh_vien_id = %s
+            LIMIT 1
+            """,
+            (lhp_id, sinh_vien_id),
+        )
+        row = cursor.fetchone()
+        if row is None:
+            raise ValueError("Khong tim thay sinh vien trong LHP")
+
+        ds_lhp_id = row["ds_lhp_id"]
+
+        cursor.execute(
+            "DELETE FROM audit_diem WHERE ds_lhp_id = %s",
+            (ds_lhp_id,),
+        )
+        cursor.execute(
+            "DELETE FROM yeu_cau_sua_diem WHERE ds_lhp_id = %s",
+            (ds_lhp_id,),
+        )
         cursor.execute(
             "DELETE FROM lich_su_hoc_mon WHERE lhp_id = %s AND sinh_vien_id = %s",
             (lhp_id, sinh_vien_id),

@@ -10,6 +10,7 @@ from services.diem_service import (
     tu_choi_lhp,
     xu_ly_yeu_cau_sua,
 )
+from services.gpa_service import tinh_va_luu_gpa_hoc_ky
 
 
 diem_bp = Blueprint("diem", __name__, url_prefix="/api/diem")
@@ -54,7 +55,11 @@ def post_duyet(lhp_id: str):
     data = request.get_json(silent=True) or {}
     tai_khoan_id = (data.get("tai_khoan_id") or "").strip()
     try:
-        return jsonify(duyet_lhp_va_tinh_diem(lhp_id, tai_khoan_id)), 200
+        result = duyet_lhp_va_tinh_diem(lhp_id, tai_khoan_id)
+        hoc_ky_id = (result.get("hoc_ky_id") or "").strip()
+        if hoc_ky_id:
+            tinh_va_luu_gpa_hoc_ky(hoc_ky_id)
+        return jsonify(result), 200
     except ValueError as exc:
         return jsonify({"success": False, "message": str(exc)}), 400
     except Exception as exc:

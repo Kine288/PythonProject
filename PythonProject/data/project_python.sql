@@ -18,6 +18,7 @@ DROP TABLE IF EXISTS sinh_vien;
 DROP TABLE IF EXISTS lop_sinh_hoat;
 DROP TABLE IF EXISTS nien_khoa;
 DROP TABLE IF EXISTS giang_vien;
+DROP TABLE IF EXISTS giao_vu;
 DROP TABLE IF EXISTS khoa_bo_mon;
 DROP TABLE IF EXISTS tai_khoan;
 
@@ -46,6 +47,17 @@ CREATE TABLE giang_vien (
     ho_ten VARCHAR(100) NOT NULL,
     hoc_vi VARCHAR(50),
     hoc_ham VARCHAR(50),
+    khoa_id VARCHAR(32),
+    so_dien_thoai VARCHAR(15),
+    FOREIGN KEY (tai_khoan_id) REFERENCES tai_khoan(tai_khoan_id),
+    FOREIGN KEY (khoa_id) REFERENCES khoa_bo_mon(khoa_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE giao_vu (
+    giao_vu_id VARCHAR(32) PRIMARY KEY,
+    tai_khoan_id VARCHAR(32) UNIQUE NOT NULL,
+    ma_giao_vu VARCHAR(20) UNIQUE NOT NULL,
+    ho_ten VARCHAR(100) NOT NULL,
     khoa_id VARCHAR(32),
     so_dien_thoai VARCHAR(15),
     FOREIGN KEY (tai_khoan_id) REFERENCES tai_khoan(tai_khoan_id),
@@ -165,7 +177,8 @@ CREATE TABLE yeu_cau_sua_diem (
     ghi_chu_giao_vu TEXT,
     ngay_tao DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ds_lhp_id) REFERENCES ds_lhp(ds_lhp_id),
-    FOREIGN KEY (giang_vien_id) REFERENCES giang_vien(giang_vien_id)
+    FOREIGN KEY (giang_vien_id) REFERENCES giang_vien(giang_vien_id),
+    FOREIGN KEY (giao_vu_xu_ly) REFERENCES giao_vu(giao_vu_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE ket_qua_hoc_ky (

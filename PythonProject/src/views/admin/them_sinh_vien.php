@@ -73,6 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
                     if ($selectedRole === 'GIANG_VIEN') {
                         $gvId = newId32();
                         $maGv = trim($_POST['ma_gv'] ?? '');
+                        if ($maGv === '') {
+                            throw new RuntimeException('Ma giang vien la bat buoc.');
+                        }
                         $hocVi = trim($_POST['hoc_vi'] ?? '');
                         $hocHam = trim($_POST['hoc_ham'] ?? '');
                         $khoaId = trim($_POST['khoa_id'] ?? '') ?: null;
@@ -86,6 +89,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
                             'ho_ten' => $hoTen,
                             'hoc_vi' => $hocVi,
                             'hoc_ham' => $hocHam,
+                            'khoa_id' => $khoaId,
+                            'sdt' => $soDienThoai,
+                        ]);
+                    } elseif ($selectedRole === 'GIAO_VU') {
+                        $giaoVuId = newId32();
+                        $maGiaoVu = trim($_POST['ma_giao_vu'] ?? '');
+                        if ($maGiaoVu === '') {
+                            throw new RuntimeException('Ma giao vu la bat buoc.');
+                        }
+                        $khoaId = trim($_POST['khoa_id'] ?? '') ?: null;
+                        $soDienThoai = trim($_POST['so_dien_thoai'] ?? '') ?: null;
+
+                        $stmt = $pdo->prepare('INSERT INTO giao_vu (giao_vu_id, tai_khoan_id, ma_giao_vu, ho_ten, khoa_id, so_dien_thoai) VALUES (:gvu_id, :tk_id, :ma_giao_vu, :ho_ten, :khoa_id, :sdt)');
+                        $stmt->execute([
+                            'gvu_id' => $giaoVuId,
+                            'tk_id' => $taiKhoanId,
+                            'ma_giao_vu' => $maGiaoVu,
+                            'ho_ten' => $hoTen,
                             'khoa_id' => $khoaId,
                             'sdt' => $soDienThoai,
                         ]);
@@ -223,6 +244,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
                                 <div class="form-group">
                                     <label>Hoc ham</label>
                                     <input name="hoc_ham">
+                                </div>
+                                <div class="form-group">
+                                    <label>Khoa/Bo mon</label>
+                                    <select name="khoa_id">
+                                        <option value="">-- Chon khoa --</option>
+                                        <?php foreach ($khoas as $khoa): ?>
+                                            <option value="<?php echo htmlspecialchars($khoa['khoa_id']); ?>"><?php echo htmlspecialchars($khoa['ma_khoa'] . ' - ' . $khoa['ten_khoa']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>So dien thoai</label>
+                                    <input name="so_dien_thoai">
+                                </div>
+                            <?php elseif ($selectedRole === 'GIAO_VU'): ?>
+                                <div class="form-group">
+                                    <label>Email</label>
+                                    <input name="email" type="email" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Mat khau khoi tao</label>
+                                    <input name="mat_khau" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Ma giao vu</label>
+                                    <input name="ma_giao_vu" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Ho va ten</label>
+                                    <input name="ho_ten" required>
                                 </div>
                                 <div class="form-group">
                                     <label>Khoa/Bo mon</label>

@@ -15,7 +15,24 @@ def main() -> None:
 
     with conn.cursor() as cur:
         cur.execute("SELECT vai_tro, COUNT(*) c FROM tai_khoan GROUP BY vai_tro ORDER BY vai_tro")
-        print("accounts_by_role", cur.fetchall())
+        role_rows = cur.fetchall()
+        print("accounts_by_role", role_rows)
+
+        expected = {
+            "ADMIN": 2,
+            "GIAO_VU": 3,
+            "GIANG_VIEN": 10,
+            "SINH_VIEN": 30,
+        }
+        actual = {row["vai_tro"]: row["c"] for row in role_rows}
+        print("accounts_role_expected", expected)
+        print("accounts_role_match", actual == expected)
+
+        cur.execute("SELECT COUNT(*) c FROM giao_vu")
+        print("giao_vu_count", cur.fetchall())
+
+        cur.execute("SELECT COUNT(*) c FROM giang_vien")
+        print("giang_vien_count", cur.fetchall())
 
         cur.execute("SELECT COUNT(*) c FROM sinh_vien")
         print("student_count", cur.fetchall())

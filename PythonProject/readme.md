@@ -65,6 +65,7 @@ Hệ thống Quản lý Sinh viên cấp Khoa là nền tảng tập trung (Cent
     - Thống kê trạng thái hoạt động của hệ thống.
 - Giáo vụ
     - Phụ trách quản lý chung.
+    - Thông tin nhân sự giáo vụ được lưu tại bảng `giao_vu`, tách biệt hoàn toàn với bảng `giang_vien`.
     - Quản lý hồ sơ học vụ sinh viên (cập nhật thông tin học tập, lớp sinh hoạt, điều chuyển).
     - Quản lý sinh viên trong lớp học phần (thêm/xóa khỏi LHP) theo nghiệp vụ đào tạo.
     - Phân công giảng viên dạy.
@@ -93,7 +94,7 @@ Hệ thống Quản lý Sinh viên cấp Khoa là nền tảng tập trung (Cent
 - UC2.1: Quản lý Khoa/Bộ môn (Thêm, Sửa, Xóa) (Giáo vụ).
 - UC2.2: Quản lý Niên khóa và Lớp sinh hoạt (Thêm, Sửa, Xóa) (Giáo vụ).
 - UC2.3: Quản lý Học kỳ (Thêm mới, Đặt làm học kỳ hiện tại) (Giáo vụ).
-- UC2.4: Quản lý Môn học (Khai báo mã môn, tên môn, số tín chỉ) (Giáo vụ).
+- UC2.4: Quản lý Môn học (Thêm môm học có sẵn trong chương trình đào tạo) (Giáo vụ).
 
 ### Nhóm 3: Quản lý Hồ sơ (Profile Management)
 

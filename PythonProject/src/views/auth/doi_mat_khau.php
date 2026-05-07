@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once __DIR__ . '/../../../config/constants.php';
+require_once __DIR__ . '/../../../config/database.php';
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: ./login.php');
@@ -20,36 +21,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($matKhauMoi !== $xacNhan) {
         $error = 'Mat khau moi va xac nhan mat khau khong trung khop.';
     } else {
-        $apiUrl = rtrim(PYTHON_API_URL, '/') . '/api/auth/doi-mat-khau';
-
-        $payload = json_encode([
-            'tai_khoan_id' => $_SESSION['user_id'],
-            'mat_khau_cu' => $matKhauCu,
-            'mat_khau_moi' => $matKhauMoi,
-        ]);
-
-        $ch = curl_init($apiUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 12);
-
-        $raw = curl_exec($ch);
-        if ($raw === false) {
-            $error = 'Khong the ket noi Python API: ' . curl_error($ch);
-            curl_close($ch);
+        $pdo = getDatabaseConnection();
+        if ($pdo === null) {
+            $error = 'Khong the ket noi co so du lieu.';
         } else {
-            $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+            $stmt = $pdo->prepare('SELECT mat_khau_hash FROM tai_khoan WHERE tai_khoan_id = :tai_khoan_id LIMIT 1');
+            $stmt->execute(['tai_khoan_id' => $_SESSION['user_id']]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            $decoded = json_decode($raw, true);
-            if (!is_array($decoded)) {
-                $error = 'Phan hoi API khong hop le.';
-            } elseif ($status >= 200 && $status < 300 && !empty($decoded['success'])) {
-                $message = 'Doi mat khau thanh cong.';
+            if (!$user) {
+                $error = 'Khong tim thay tai khoan.';
             } else {
-                $error = $decoded['message'] ?? 'Khong the doi mat khau.';
+                $storedHash = (string)($user['mat_khau_hash'] ?? '');
+                $oldPasswordOk = false;
+
+                if ($storedHash !== '') {
+                    if (password_verify($matKhauCu, $storedHash)) {
+                        $oldPasswordOk = true;
+                    } else {
+                        $legacySha256 = hash('sha256', $matKhauCu);
+                        $isLegacy = (strlen($storedHash) < 60) || (strpos($storedHash, '$2y$') !== 0);
+                        if (($isLegacy && hash_equals($storedHash, $matKhauCu)) || hash_equals($storedHash, $legacySha256)) {
+                            $oldPasswordOk = true;
+                        }
+                    }
+                }
+
+                if (!$oldPasswordOk) {
+                    $error = 'Mat khau hien tai khong dung.';
+                } else {
+                    $newHash = password_hash($matKhauMoi, PASSWORD_BCRYPT);
+                    if ($newHash === false) {
+                        $error = 'Khong the tao mat khau moi.';
+                    } else {
+                        $update = $pdo->prepare('UPDATE tai_khoan SET mat_khau_hash = :mat_khau_hash WHERE tai_khoan_id = :tai_khoan_id');
+                        $update->execute([
+                            'mat_khau_hash' => $newHash,
+                            'tai_khoan_id' => $_SESSION['user_id'],
+                        ]);
+                        $message = 'Doi mat khau thanh cong.';
+                    }
+                }
             }
         }
     }
