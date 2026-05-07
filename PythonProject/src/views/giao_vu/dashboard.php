@@ -6,12 +6,14 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'GIAO_VU') {
 <!DOCTYPE html>
 <html lang="vi">
 
-<head>
+<head >
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Giao vu Dashboard</title>
     <link rel="stylesheet" href="../../../assets/css/Background.css">
     <link rel="stylesheet" href="../../../assets/css/components.css">
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400;600;700&display=swap" rel="stylesheet">
+
 </head>
 
 <body><?php include __DIR__ . '/../layouts/sidebar.php'; ?><div class="app-content"><?php include __DIR__ . '/../layouts/header.php'; ?><div class="app-content-inner">

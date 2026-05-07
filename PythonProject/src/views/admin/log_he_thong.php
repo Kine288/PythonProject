@@ -21,32 +21,55 @@ if ($pdo) {
     <title>Log he thong</title>
     <link rel="stylesheet" href="../../../assets/css/Background.css">
     <link rel="stylesheet" href="../../../assets/css/components.css">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400;600;700&display=swap" rel="stylesheet">
+
 </head>
 
 <body>
     <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
-    <div class="app-content"><?php include __DIR__ . '/../layouts/header.php'; ?>
+
+    <div class="app-content">
+        <?php include __DIR__ . '/../layouts/header.php'; ?>
+
         <div class="app-content-inner">
-            <h1>Log he thong</h1>
-            <p class="muted-text">Theo doi hanh dong quan tri gan nhat.</p>
-            <div class="table-wrapper" style="background:#fff;border:1px solid #e2e8f0;">
-                <table style="width:100%;border-collapse:collapse;">
-                    <thead>
-                        <tr>
-                            <th style="padding:10px;text-align:left;">Thoi diem</th>
-                            <th style="padding:10px;text-align:left;">Nguoi thuc hien</th>
-                            <th style="padding:10px;text-align:left;">Hanh dong</th>
-                            <th style="padding:10px;text-align:left;">Doi tuong</th>
-                        </tr>
-                    </thead>
-                    <tbody><?php foreach ($logs as $log): ?><tr style="border-top:1px solid #f1f5f9;">
-                                <td style="padding:10px;"><?php echo htmlspecialchars((string)$log['thoi_diem']); ?></td>
-                                <td style="padding:10px;"><?php echo htmlspecialchars((string)($log['email'] ?? '')); ?></td>
-                                <td style="padding:10px;"><?php echo htmlspecialchars((string)$log['hanh_dong']); ?></td>
-                                <td style="padding:10px;"><?php echo htmlspecialchars((string)$log['doi_tuong_loai']); ?></td>
-                            </tr><?php endforeach; ?></tbody>
-                </table>
+            <div class="dashboard-header">
+                <div>
+                    <h1>Log he thong</h1>
+                    <p class="muted-text">Theo doi hanh dong quan tri gan nhat.</p>
+                </div>
+                <div class="dashboard-actions">
+                    <a class="btn-secondary" href="log_he_thong.php">Lam moi</a>
+                </div>
             </div>
+
+            <?php if (empty($logs)): ?>
+                <div class="alert-warning">Chua co log he thong nao.</div>
+            <?php else: ?>
+                <div class="content-card">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>Thoi diem</th>
+                                <th>Nguoi thuc hien</th>
+                                <th>Hanh dong</th>
+                                <th>Doi tuong</th>
+                                <th>Doi tuong ID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($logs as $log): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars((string)$log['thoi_diem']); ?></td>
+                                    <td><?php echo htmlspecialchars((string)($log['email'] ?? '')); ?></td>
+                                    <td><?php echo htmlspecialchars((string)$log['hanh_dong']); ?></td>
+                                    <td><?php echo htmlspecialchars((string)$log['doi_tuong_loai']); ?></td>
+                                    <td><?php echo htmlspecialchars((string)($log['doi_tuong_id'] ?? '')); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
         </div>
         <?php include __DIR__ . '/../layouts/footer.php'; ?>
     </div>

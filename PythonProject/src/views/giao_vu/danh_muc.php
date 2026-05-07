@@ -12,6 +12,8 @@ if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'GIAO_VU') {
     <title>Danh muc co so</title>
     <link rel="stylesheet" href="../../../assets/css/Background.css">
     <link rel="stylesheet" href="../../../assets/css/components.css">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400;600;700&display=swap" rel="stylesheet">
+
 </head>
 
 <body><?php include __DIR__ . '/../layouts/sidebar.php'; ?><div class="app-content"><?php include __DIR__ . '/../layouts/header.php'; ?><div class="app-content-inner">

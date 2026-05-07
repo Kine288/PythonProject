@@ -121,6 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
     <title>Them tai khoan</title>
     <link rel="stylesheet" href="../../../assets/css/Background.css">
     <link rel="stylesheet" href="../../../assets/css/components.css">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400;600;700&display=swap" rel="stylesheet">
+
 </head>
 
 <body>
@@ -146,111 +148,117 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_account'])) {
 
             <div class="card">
                 <form method="post" id="form-create-account">
-                    <div class="form-group">
-                        <label>Buoc 1 - Chon vai tro</label>
-                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+                    <div class="form-section">
+                        <div class="form-section-title">Buoc 1 - Chon vai tro</div>
+                        <div class="role-grid">
                             <?php foreach (['SINH_VIEN', 'GIANG_VIEN', 'GIAO_VU', 'ADMIN'] as $roleOption): ?>
-                                <label style="border:1px solid #e2e8f0;padding:10px;border-radius:10px;cursor:pointer;background:<?php echo $selectedRole === $roleOption ? '#ecfeff' : '#fff'; ?>;">
+                                <label class="role-card <?php echo $selectedRole === $roleOption ? 'active' : ''; ?>">
                                     <input type="radio" name="role" value="<?php echo $roleOption; ?>" <?php echo $selectedRole === $roleOption ? 'checked' : ''; ?> onchange="document.getElementById('form-create-account').submit();">
-                                    <?php echo $roleOption; ?>
+                                    <span><?php echo $roleOption; ?></span>
                                 </label>
                             <?php endforeach; ?>
                         </div>
                     </div>
 
-                    <?php if ($selectedRole === 'SINH_VIEN'): ?>
-                        <div class="form-group">
-                            <label>Ma sinh vien</label>
-                            <input name="msv" placeholder="VD: 725101001" required>
+                    <div class="form-section">
+                        <div class="form-section-title">Buoc 2 - Thong tin</div>
+                        <div class="form-grid">
+                            <?php if ($selectedRole === 'SINH_VIEN'): ?>
+                                <div class="form-group">
+                                    <label>Ma sinh vien</label>
+                                    <input name="msv" placeholder="VD: 725101001" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Ho va ten</label>
+                                    <input name="ho_ten" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Lop sinh hoat</label>
+                                    <select name="lop_id" required>
+                                        <option value="">-- Chon lop --</option>
+                                        <?php foreach ($lops as $lop): ?>
+                                            <option value="<?php echo htmlspecialchars($lop['lop_id']); ?>"><?php echo htmlspecialchars($lop['ma_lop'] . ' - ' . $lop['ten_lop']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Ngay sinh</label>
+                                    <input type="date" name="ngay_sinh">
+                                </div>
+                                <div class="form-group">
+                                    <label>Gioi tinh</label>
+                                    <select name="gioi_tinh">
+                                        <option value="">-- Chon gioi tinh --</option>
+                                        <option value="Nam">Nam</option>
+                                        <option value="Nu">Nu</option>
+                                        <option value="Khac">Khac</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Mat khau khoi tao</label>
+                                    <input name="mat_khau" value="" placeholder="De trong = dung msv">
+                                    <div class="form-help">Neu de trong, mat khau se dung ma sinh vien.</div>
+                                </div>
+                            <?php elseif ($selectedRole === 'GIANG_VIEN'): ?>
+                                <div class="form-group">
+                                    <label>Email</label>
+                                    <input name="email" type="email" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Mat khau khoi tao</label>
+                                    <input name="mat_khau" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Ma giang vien</label>
+                                    <input name="ma_gv" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Ho va ten</label>
+                                    <input name="ho_ten" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Hoc vi</label>
+                                    <input name="hoc_vi" placeholder="Cu nhan/Thac si/Tien si">
+                                </div>
+                                <div class="form-group">
+                                    <label>Hoc ham</label>
+                                    <input name="hoc_ham">
+                                </div>
+                                <div class="form-group">
+                                    <label>Khoa/Bo mon</label>
+                                    <select name="khoa_id">
+                                        <option value="">-- Chon khoa --</option>
+                                        <?php foreach ($khoas as $khoa): ?>
+                                            <option value="<?php echo htmlspecialchars($khoa['khoa_id']); ?>"><?php echo htmlspecialchars($khoa['ma_khoa'] . ' - ' . $khoa['ten_khoa']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>So dien thoai</label>
+                                    <input name="so_dien_thoai">
+                                </div>
+                            <?php else: ?>
+                                <div class="form-group">
+                                    <label>Email</label>
+                                    <input name="email" type="email" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Mat khau khoi tao</label>
+                                    <input name="mat_khau" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Ho va ten</label>
+                                    <input name="ho_ten" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>So dien thoai</label>
+                                    <input name="so_dien_thoai">
+                                </div>
+                            <?php endif; ?>
                         </div>
-                        <div class="form-group">
-                            <label>Ho va ten</label>
-                            <input name="ho_ten" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Lop sinh hoat</label>
-                            <select name="lop_id" required>
-                                <option value="">-- Chon lop --</option>
-                                <?php foreach ($lops as $lop): ?>
-                                    <option value="<?php echo htmlspecialchars($lop['lop_id']); ?>"><?php echo htmlspecialchars($lop['ma_lop'] . ' - ' . $lop['ten_lop']); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Ngay sinh</label>
-                            <input type="date" name="ngay_sinh">
-                        </div>
-                        <div class="form-group">
-                            <label>Gioi tinh</label>
-                            <select name="gioi_tinh">
-                                <option value="">-- Chon gioi tinh --</option>
-                                <option value="Nam">Nam</option>
-                                <option value="Nu">Nu</option>
-                                <option value="Khac">Khac</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Mat khau khoi tao</label>
-                            <input name="mat_khau" value="" placeholder="De trong = dung msv">
-                        </div>
-                    <?php elseif ($selectedRole === 'GIANG_VIEN'): ?>
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input name="email" type="email" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Mat khau khoi tao</label>
-                            <input name="mat_khau" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Ma giang vien</label>
-                            <input name="ma_gv" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Ho va ten</label>
-                            <input name="ho_ten" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Hoc vi</label>
-                            <input name="hoc_vi" placeholder="Cu nhan/Thac si/Tien si">
-                        </div>
-                        <div class="form-group">
-                            <label>Hoc ham</label>
-                            <input name="hoc_ham">
-                        </div>
-                        <div class="form-group">
-                            <label>Khoa/Bo mon</label>
-                            <select name="khoa_id">
-                                <option value="">-- Chon khoa --</option>
-                                <?php foreach ($khoas as $khoa): ?>
-                                    <option value="<?php echo htmlspecialchars($khoa['khoa_id']); ?>"><?php echo htmlspecialchars($khoa['ma_khoa'] . ' - ' . $khoa['ten_khoa']); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>So dien thoai</label>
-                            <input name="so_dien_thoai">
-                        </div>
-                    <?php else: ?>
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input name="email" type="email" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Mat khau khoi tao</label>
-                            <input name="mat_khau" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Ho va ten</label>
-                            <input name="ho_ten" required>
-                        </div>
-                        <div class="form-group">
-                            <label>So dien thoai</label>
-                            <input name="so_dien_thoai">
-                        </div>
-                    <?php endif; ?>
+                    </div>
 
-                    <div style="display:flex;gap:10px;margin-top:8px;">
+                    <div class="form-actions">
                         <button type="submit" class="btn-primary" name="create_account" value="1">Tao tai khoan</button>
                         <a href="quan_ly_tai_khoan.php" class="btn-secondary" style="text-decoration:none;display:inline-flex;align-items:center;">Quay lai</a>
                     </div>

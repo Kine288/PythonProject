@@ -3,9 +3,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/../../../config/constants.php';
+
 $role = $_SESSION['user_role'] ?? 'GUEST';
 $userEmail = $_SESSION['user_email'] ?? 'guest';
-$changePasswordUrl = '/PythonProject/PythonProject/src/views/auth/doi_mat_khau.php';
+$baseUrl = rtrim(APP_BASE_URL, '/');
+$changePasswordUrl = $baseUrl . '/src/views/auth/doi_mat_khau.php';
 $roleLabel = 'Khach';
 if ($role === 'ADMIN') {
     $roleLabel = 'Quan tri he thong';
