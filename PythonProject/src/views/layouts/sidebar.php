@@ -1,6 +1,8 @@
 <?php
 $role = $_SESSION['user_role'] ?? '';
 $script_name = $_SERVER['SCRIPT_NAME'] ?? '';
+$current_page = basename($script_name);
+$has_lhp_id = isset($_GET['lhp_id']) && $_GET['lhp_id'] !== '';
 $views_base = preg_replace('#/src/views/.*$#', '/src/views', $script_name);
 if (!$views_base) {
 	$views_base = '/src/views';
@@ -24,12 +26,10 @@ $menus_by_role = [
 	],
 	'GIANG_VIEN' => [
 		['label' => 'Lop hoc phan', 'icon' => 'class', 'href' => $views_base . '/giang_vien/lop_hoc_phan.php'],
-		['label' => 'Nhap diem', 'icon' => 'edit_square', 'href' => $views_base . '/giang_vien/nhap_diem.php'],
-		['label' => 'Yeu cau sua diem', 'icon' => 'history_edu', 'href' => '#'],
 		['label' => 'Ho so ca nhan', 'icon' => 'person', 'href' => '#'],
 	],
 	'SINH_VIEN' => [
-		['label' => 'Bang diem ca nhan', 'icon' => 'grading', 'href' => '#'],
+		['label' => 'Bang diem ca nhan', 'icon' => 'grading', 'href' => $views_base . '/sinh_vien/bang_diem.php'],
 		['label' => 'Xep loai hoc luc', 'icon' => 'emoji_events', 'href' => '#'],
 		['label' => 'Xuat phieu diem', 'icon' => 'description', 'href' => '#'],
 		['label' => 'Ho so ca nhan', 'icon' => 'person', 'href' => '#'],
@@ -37,6 +37,19 @@ $menus_by_role = [
 ];
 
 $menu_items = $menus_by_role[$role] ?? [];
+$is_nhap_diem_page = $current_page === 'nhap_diem.php';
+if ($role === 'GIANG_VIEN' && $is_nhap_diem_page && $has_lhp_id) {
+	array_splice(
+		$menu_items,
+		1,
+		0,
+		[[
+			'label' => 'Nhap diem',
+			'icon' => 'edit_square',
+			'href' => $views_base . '/giang_vien/nhap_diem.php?lhp_id=' . urlencode($_GET['lhp_id'])
+		]]
+	);
+}
 $logout_href = $views_base . '/auth/logout.php';
 ?>
 
@@ -54,7 +67,8 @@ $logout_href = $views_base . '/auth/logout.php';
 	<nav class="flex-1 space-y-1">
 		<?php foreach ($menu_items as $item): ?>
 			<?php
-			$is_active = $item['href'] !== '#' && $item['href'] === $script_name;
+			$item_path = $item['href'] !== '#' ? parse_url($item['href'], PHP_URL_PATH) : '';
+			$is_active = $item_path !== '' && $item_path === $script_name;
 			$link_classes = $is_active
 				? "flex items-center gap-3 px-3 py-2 bg-teal-50 text-teal-600 font-semibold rounded-lg scale-100 active:scale-95 origin-left font-['Manrope'] text-sm"
 				: "flex items-center gap-3 px-3 py-2 text-slate-600 hover:text-teal-500 hover:bg-slate-50 rounded-lg transition-all duration-200 scale-100 active:scale-95 origin-left font-['Manrope'] text-sm";
