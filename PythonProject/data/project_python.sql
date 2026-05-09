@@ -1,231 +1,961 @@
--- Schema for Student Management System (Faculty scope)
--- MySQL 8.0+
+-- phpMyAdmin SQL Dump
+-- version 5.2.0
+-- https://www.phpmyadmin.net/
+--
+-- Host: localhost:3306
+-- Generation Time: May 09, 2026 at 08:34 AM
+-- Server version: 8.4.2
+-- PHP Version: 8.1.10
 
-SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
 
-DROP TABLE IF EXISTS admin_log;
-DROP TABLE IF EXISTS lich_su_ho_so;
-DROP TABLE IF EXISTS ket_qua_hoc_ky;
-DROP TABLE IF EXISTS yeu_cau_sua_diem;
-DROP TABLE IF EXISTS audit_diem;
-DROP TABLE IF EXISTS lich_su_hoc_mon;
-DROP TABLE IF EXISTS ds_lhp;
-DROP TABLE IF EXISTS lop_hoc_phan;
-DROP TABLE IF EXISTS mon_hoc;
-DROP TABLE IF EXISTS hoc_ky;
-DROP TABLE IF EXISTS sinh_vien;
-DROP TABLE IF EXISTS lop_sinh_hoat;
-DROP TABLE IF EXISTS nien_khoa;
-DROP TABLE IF EXISTS giang_vien;
-DROP TABLE IF EXISTS giao_vu;
-DROP TABLE IF EXISTS khoa_bo_mon;
-DROP TABLE IF EXISTS tai_khoan;
 
-SET FOREIGN_KEY_CHECKS = 1;
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
 
-CREATE TABLE tai_khoan (
-    tai_khoan_id VARCHAR(32) PRIMARY KEY,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    mat_khau_hash VARCHAR(255) NOT NULL,
-    vai_tro ENUM('ADMIN','GIAO_VU','GIANG_VIEN','SINH_VIEN') NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    ngay_tao DATETIME DEFAULT CURRENT_TIMESTAMP,
-    lan_dang_nhap_cuoi DATETIME
+--
+-- Database: `project_python`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `admin_log`
+--
+
+CREATE TABLE `admin_log` (
+  `log_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tai_khoan_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `hanh_dong` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `doi_tuong_loai` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `doi_tuong_id` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `du_lieu` json DEFAULT NULL,
+  `thoi_diem` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE khoa_bo_mon (
-    khoa_id VARCHAR(32) PRIMARY KEY,
-    ten_khoa VARCHAR(100) NOT NULL,
-    ma_khoa VARCHAR(20) UNIQUE NOT NULL
+--
+-- Dumping data for table `admin_log`
+--
+
+INSERT INTO `admin_log` (`log_id`, `tai_khoan_id`, `hanh_dong`, `doi_tuong_loai`, `doi_tuong_id`, `du_lieu`, `thoi_diem`) VALUES
+('142be34ade0549e99f8d1f109157feed', '24000000000000000000000000000004', 'CREATE_STUDENT_ACCOUNT', 'SINH_VIEN', 'b2f1842712744ad3b5682514c82ccd82', '{\"msv\": \"735105060\", \"tai_khoan\": \"735105060\"}', '2026-05-07 21:20:39'),
+('277af05a27cc40e190b7be383bccc207', '24000000000000000000000000000001', 'CREATE_STUDENT_ACCOUNT', 'SINH_VIEN', '5006286f9c794c6286f91d4df66dca4d', '{\"msv\": \"785101631\", \"tai_khoan\": \"785101631\"}', '2026-05-07 21:06:31'),
+('38000000000000000000000000000001', '24000000000000000000000000000001', 'SEED_INITIAL_DATA', 'SYSTEM', 'INITIAL', '{\"source\": \"scripts/seed_data.py\"}', '2026-05-07 21:06:30'),
+('664b5059708c4956b08bd0d7d4013216', '24000000000000000000000000000001', 'CREATE_STUDENT_ACCOUNT', 'SINH_VIEN', '97f9bf5315ba40d39ee7af076e36f44d', '{\"msv\": \"785101659\", \"tai_khoan\": \"785101659\"}', '2026-05-07 21:06:59'),
+('d9734f083dbf42868209931829edc97c', '24000000000000000000000000000001', 'CREATE_STUDENT_ACCOUNT', 'SINH_VIEN', 'f6b23af8bdb44d1e8be08e77fdcc866e', '{\"msv\": \"785101956\", \"tai_khoan\": \"785101956\"}', '2026-05-07 21:09:56'),
+('edacb90a5955455e87067571c7c10540', '24000000000000000000000000000001', 'CREATE_STUDENT_ACCOUNT', 'SINH_VIEN', '6dccd69c8218433fa910b07c352568bb', '{\"msv\": \"785101051\", \"tai_khoan\": \"785101051\"}', '2026-05-07 21:10:51');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `audit_diem`
+--
+
+CREATE TABLE `audit_diem` (
+  `audit_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ds_lhp_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tai_khoan_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `truoc_thay_doi` json DEFAULT NULL,
+  `sau_thay_doi` json DEFAULT NULL,
+  `ly_do` text COLLATE utf8mb4_unicode_ci,
+  `thoi_diem` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE giang_vien (
-    giang_vien_id VARCHAR(32) PRIMARY KEY,
-    tai_khoan_id VARCHAR(32) UNIQUE NOT NULL,
-    ma_gv VARCHAR(20) UNIQUE NOT NULL,
-    ho_ten VARCHAR(100) NOT NULL,
-    hoc_vi VARCHAR(50),
-    hoc_ham VARCHAR(50),
-    khoa_id VARCHAR(32),
-    so_dien_thoai VARCHAR(15),
-    FOREIGN KEY (tai_khoan_id) REFERENCES tai_khoan(tai_khoan_id),
-    FOREIGN KEY (khoa_id) REFERENCES khoa_bo_mon(khoa_id)
+--
+-- Dumping data for table `audit_diem`
+--
+
+INSERT INTO `audit_diem` (`audit_id`, `ds_lhp_id`, `tai_khoan_id`, `truoc_thay_doi`, `sau_thay_doi`, `ly_do`, `thoi_diem`) VALUES
+('0002babb913f4c3998cfde2d4d6488fc', '32000000000000000000000000000010', '24000000000000000000000000000002', '{\"diem_tong\": 3.2}', '{\"diem_tong\": 3.2}', 'Duyet diem LHP', '2026-05-07 21:09:57'),
+('005b054661494437b67020174c0ffe87', '36000000000000000000000000000001', '24000000000000000000000000000011', '{\"diem_cc\": 6.9, \"diem_ck\": null, \"diem_gk\": 6.3}', '{\"diem_cc\": 8.0, \"diem_ck\": 8.2, \"diem_gk\": 7.5}', 'Smoke update', '2026-05-07 21:06:59'),
+('024b2da6949741cf90ddc5fc4123fc65', '816b3aa773974bbb90f10a880c81e669', '24000000000000000000000000000012', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 10.0, \"diem_ck\": 10.0, \"diem_gk\": 10.0}', 'Luu nhap diem', '2026-05-08 01:27:52'),
+('06c9df9813054bc4a824677bda4619a9', '32000000000000000000000000000006', '24000000000000000000000000000002', '{\"diem_tong\": 7.1}', '{\"diem_tong\": 7.1}', 'Duyet diem LHP', '2026-05-07 21:09:57'),
+('0df6446419b84485a2fbaf8231e368a4', '32000000000000000000000000000005', '24000000000000000000000000000002', '{\"diem_tong\": 7.9}', '{\"diem_tong\": 7.9}', 'Duyet diem LHP', '2026-05-07 23:46:11'),
+('1137e47cd7174d16b1a555265288de1c', '32000000000000000000000000000002', '24000000000000000000000000000002', '{\"diem_tong\": 8.8}', '{\"diem_tong\": 8.8}', 'Duyet diem LHP', '2026-05-07 23:46:11'),
+('18f2c844ac4741de92649708dd373bcc', '32000000000000000000000000000009', '24000000000000000000000000000002', '{\"diem_tong\": 4.5}', '{\"diem_tong\": 4.5}', 'Duyet diem LHP', '2026-05-07 23:46:11'),
+('1b15779bb30b41df96fe6c56803969b1', '32000000000000000000000000000010', '24000000000000000000000000000002', '{\"diem_tong\": 3.2}', '{\"diem_tong\": 3.2}', 'Duyet diem LHP', '2026-05-07 23:46:11'),
+('1d1fc93d1ca34d3dbef0b8592b55e8d5', '36000000000000000000000000000001', '24000000000000000000000000000011', '{\"diem_cc\": 6.9, \"diem_ck\": null, \"diem_gk\": 6.3}', '{\"diem_cc\": 8.0, \"diem_ck\": 8.2, \"diem_gk\": 7.5}', 'Smoke update', '2026-05-07 21:09:57'),
+('1d4e0c90c696480bb5e52b6a71603eac', '0b2c7bc57c58460c97ce090625467e24', '24000000000000000000000000000011', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 10.0, \"diem_ck\": 7.0, \"diem_gk\": 8.0}', 'Luu nhap diem', '2026-05-08 01:43:11'),
+('21a38e99cdfb408095349f6e144e7dcc', '32000000000000000000000000000002', '24000000000000000000000000000002', '{\"diem_tong\": 8.8}', '{\"diem_tong\": 8.8}', 'Duyet diem LHP', '2026-05-07 21:06:59'),
+('23a05dcfad89433ab205fc855cc236c7', '32000000000000000000000000000008', '24000000000000000000000000000002', '{\"diem_tong\": 6.0}', '{\"diem_tong\": 6.0}', 'Duyet diem LHP', '2026-05-07 21:06:59'),
+('24a3a190398342a98ed92ddf8ec46c14', '32000000000000000000000000000003', '24000000000000000000000000000002', '{\"diem_tong\": 8.6}', '{\"diem_tong\": 8.6}', 'Duyet diem LHP', '2026-05-07 21:09:57'),
+('261812b5142a4d5180857f3129365701', 'f9901eb43ae54a898488db72e617cc8c', '24000000000000000000000000000011', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 5, \"diem_ck\": 7, \"diem_gk\": 6}', 'Luu nhap diem', '2026-05-08 01:00:05'),
+('28c7dd5a00d146f7a2f4cc19b2415329', '32000000000000000000000000000003', '24000000000000000000000000000002', '{\"diem_tong\": 8.6}', '{\"diem_tong\": 8.6}', 'Duyet diem LHP', '2026-05-07 23:46:11'),
+('2dae35c517a74b6e93bc61764ede5dde', 'be96fcead2b74de692eccca1e8aef640', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 8.7}', 'Duyet diem LHP', '2026-05-08 01:29:06'),
+('302d11ec300d4ebf97e0614e271145fe', '1562531cab30481fbc42ffcba8dfbb7f', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 5.5}', 'Duyet diem LHP', '2026-05-08 01:06:25'),
+('306cfea04b4d406ba21a8952b8fd7097', '32000000000000000000000000000002', '24000000000000000000000000000002', '{\"diem_tong\": 8.8}', '{\"diem_tong\": 8.8}', 'Duyet diem LHP', '2026-05-07 21:09:57'),
+('33672bd3b202450e85ca3cae2799f03c', '32000000000000000000000000000004', '24000000000000000000000000000002', '{\"diem_tong\": 8.2}', '{\"diem_tong\": 8.2}', 'Duyet diem LHP', '2026-05-07 21:06:59'),
+('33793d3309ee45a6876b686bb88b6d5d', '32000000000000000000000000000003', '24000000000000000000000000000002', '{\"diem_tong\": 8.6}', '{\"diem_tong\": 8.6}', 'Duyet diem LHP', '2026-05-07 21:06:59'),
+('35ce982b312d4084b3419b460a3409fa', '32000000000000000000000000000008', '24000000000000000000000000000002', '{\"diem_tong\": 6.0}', '{\"diem_tong\": 6.0}', 'Duyet diem LHP', '2026-05-07 21:09:57'),
+('37ccd641f5b847a5b79c7cfc53895e2d', '32000000000000000000000000000007', '24000000000000000000000000000002', '{\"diem_tong\": 6.8}', '{\"diem_tong\": 6.8}', 'Duyet diem LHP', '2026-05-07 21:06:59'),
+('3a5383bd6f9943e68ac1c60d9155b67f', 'ef96631b5b50428c972077ad68dab741', '24000000000000000000000000000011', '{\"diem_cc\": 10.0, \"diem_ck\": 11.0, \"diem_gk\": 10.0}', '{\"diem_cc\": 10, \"diem_ck\": 10, \"diem_gk\": 10}', 'Luu nhap diem', '2026-05-08 01:00:00'),
+('3c8ae660cef14e58bdbdefadb8858116', 'cce4a96f63f547bebe8a74768319325d', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 7.7}', 'Duyet diem LHP', '2026-05-08 01:06:25'),
+('3fe2c01a7eb9414797155692e58929b3', '1fb678b8653746c996b50f1e6585d0b0', '24000000000000000000000000000011', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 5, \"diem_ck\": 8, \"diem_gk\": 9}', 'Luu nhap diem', '2026-05-08 01:00:11'),
+('404c063c9d1e4052bfc1116e24442fa0', '32000000000000000000000000000006', '24000000000000000000000000000002', '{\"diem_tong\": 7.1}', '{\"diem_tong\": 7.1}', 'Duyet diem LHP', '2026-05-07 23:46:11'),
+('43d0a4a2d5b84b78b79af3d4aca8ba27', '32000000000000000000000000000007', '24000000000000000000000000000002', '{\"diem_tong\": 6.8}', '{\"diem_tong\": 6.8}', 'Duyet diem LHP', '2026-05-07 23:46:11'),
+('46b556810ea34e39b91656702513e193', '0b2c7bc57c58460c97ce090625467e24', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 7.6}', 'Duyet diem LHP', '2026-05-08 01:43:29'),
+('4942b6b4fd384fb4ab4e49c9777b5669', 'cce4a96f63f547bebe8a74768319325d', '24000000000000000000000000000011', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 8, \"diem_ck\": 7, \"diem_gk\": 9}', 'Luu nhap diem', '2026-05-08 01:00:14'),
+('49fbea0e57c0433bb435089bdc51a9cd', '42ada042e37f4e64839b8af85e71bbcf', '24000000000000000000000000000011', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 7, \"diem_ck\": 9, \"diem_gk\": 8}', 'Luu nhap diem', '2026-05-08 01:00:09'),
+('4aa2265457904915bb4639d0a98736f7', '6855fc7b8b604888b6ed4aa9237163e7', '24000000000000000000000000000011', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 10, \"diem_ck\": 6, \"diem_gk\": 8}', 'Luu nhap diem', '2026-05-08 01:00:03'),
+('4f05d15a5425435ca5bbb44cf2829c0b', '32000000000000000000000000000009', '24000000000000000000000000000002', '{\"diem_tong\": 4.5}', '{\"diem_tong\": 4.5}', 'Duyet diem LHP', '2026-05-07 21:09:57'),
+('5e5572d3c37d4974821a476524d20715', '1562531cab30481fbc42ffcba8dfbb7f', '24000000000000000000000000000011', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 4, \"diem_ck\": 6, \"diem_gk\": 5}', 'Luu nhap diem', '2026-05-08 01:00:18'),
+('60da385c4df94037b8442a8d56250542', '1fd08dcea9974f3bbda1611d67107f56', '24000000000000000000000000000011', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 8, \"diem_ck\": 9, \"diem_gk\": 7}', 'Luu nhap diem', '2026-05-08 01:00:07'),
+('6784468b95e84127b09e1456ff656b3a', '32000000000000000000000000000009', '24000000000000000000000000000002', '{\"diem_tong\": 4.5}', '{\"diem_tong\": 4.5}', 'Duyet diem LHP', '2026-05-07 21:06:59'),
+('6fd02534e199468c82fcbe5dde4595c0', '0b73eb66fafe4883848a63f0acec8bc8', '24000000000000000000000000000011', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 10.0, \"diem_ck\": 8.0, \"diem_gk\": 8.5}', 'Luu nhap diem', '2026-05-08 01:43:11'),
+('747ca5ba99d94a8c8a8fb2e4b48c2a88', '32000000000000000000000000000005', '24000000000000000000000000000002', '{\"diem_tong\": 7.9}', '{\"diem_tong\": 7.9}', 'Duyet diem LHP', '2026-05-07 21:09:57'),
+('7f1053e85ea74bb0aa3c7cb428b40e1f', '1fd08dcea9974f3bbda1611d67107f56', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 8.3}', 'Duyet diem LHP', '2026-05-08 01:06:25'),
+('8477b5505d564241b6a5a19bc2f02866', '32000000000000000000000000000006', '24000000000000000000000000000002', '{\"diem_tong\": 7.1}', '{\"diem_tong\": 7.1}', 'Duyet diem LHP', '2026-05-07 21:06:59'),
+('89bcbfdb29624d0ba7b3c7782eeaf311', '8c208350b2ac4ef399ce826cbaeabf61', '24000000000000000000000000000012', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 10.0, \"diem_ck\": 8.0, \"diem_gk\": 8.5}', 'Luu nhap diem', '2026-05-08 01:27:52'),
+('91ab3c0a7823467a9c515c91046d46f7', '6855fc7b8b604888b6ed4aa9237163e7', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 7.0}', 'Duyet diem LHP', '2026-05-08 01:06:25'),
+('9314e4970a1d448696ae645500b565a9', 'be96fcead2b74de692eccca1e8aef640', '24000000000000000000000000000012', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 10.0, \"diem_ck\": 8.5, \"diem_gk\": 8.5}', 'Luu nhap diem', '2026-05-08 01:27:52'),
+('9426519d247e4cbd87b61c11831c3a5d', '32000000000000000000000000000010', '24000000000000000000000000000002', '{\"diem_tong\": 3.2}', '{\"diem_tong\": 3.2}', 'Duyet diem LHP', '2026-05-07 21:06:59'),
+('946978a6333c4214b1039d4a434c112e', '32000000000000000000000000000001', '24000000000000000000000000000002', '{\"diem_tong\": 9.2}', '{\"diem_tong\": 9.2}', 'Duyet diem LHP', '2026-05-07 21:06:59'),
+('9502c001b17e4a278900dea1e81215b5', '816b3aa773974bbb90f10a880c81e669', '24000000000000000000000000000002', '{\"diem_tong\": 10.0}', '{\"diem_tong\": 10.0}', 'Duyet diem LHP', '2026-05-08 01:37:37'),
+('97b3a978dac24bc5825fa8969415609f', '32000000000000000000000000000001', '24000000000000000000000000000002', '{\"diem_tong\": 9.2}', '{\"diem_tong\": 9.2}', 'Duyet diem LHP', '2026-05-07 21:09:57'),
+('9b48ab586eb74464aef219f8f8cc2767', 'dfa0ec99daa54d75b34f758477f7d576', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 10.0}', 'Duyet diem LHP', '2026-05-08 01:43:29'),
+('a1c9ca1f2dbb4289b101657b73a15aae', '8c208350b2ac4ef399ce826cbaeabf61', '24000000000000000000000000000002', '{\"diem_tong\": 8.4}', '{\"diem_tong\": 8.4}', 'Duyet diem LHP', '2026-05-08 01:37:37'),
+('a46a030c668b49a48567f2b5e145b4f7', 'ef96631b5b50428c972077ad68dab741', '24000000000000000000000000000011', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 10, \"diem_ck\": 11, \"diem_gk\": 10}', 'Luu nhap diem', '2026-05-08 00:59:02'),
+('ae71f347779c4feb833417c909d94432', '32000000000000000000000000000004', '24000000000000000000000000000002', '{\"diem_tong\": 8.2}', '{\"diem_tong\": 8.2}', 'Duyet diem LHP', '2026-05-07 21:09:57'),
+('b0bea1db21dc44dc9294fef8b8d4fcf8', '0b73eb66fafe4883848a63f0acec8bc8', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 8.4}', 'Duyet diem LHP', '2026-05-08 01:43:29'),
+('b180ff7f67ab4cc6b09bb819de222e55', '42ada042e37f4e64839b8af85e71bbcf', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 8.5}', 'Duyet diem LHP', '2026-05-08 01:06:25'),
+('b28e04e768244f39b674be5f093fdca6', 'ef96631b5b50428c972077ad68dab741', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 10.0}', 'Duyet diem LHP', '2026-05-08 01:06:25'),
+('b32a7b9534b74f92974c86e72248a3c7', '1fb678b8653746c996b50f1e6585d0b0', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 8.0}', 'Duyet diem LHP', '2026-05-08 01:06:25'),
+('ba48fef084964d0ebfa4c2b93c68ba09', 'a812f0b65f35438eaadd1035da9f0369', '24000000000000000000000000000011', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 7, \"diem_ck\": 5, \"diem_gk\": 6}', 'Luu nhap diem', '2026-05-08 01:00:15'),
+('c909221fe6574dedae1ebc5429867eb4', '32000000000000000000000000000001', '24000000000000000000000000000002', '{\"diem_tong\": 9.2}', '{\"diem_tong\": 9.2}', 'Duyet diem LHP', '2026-05-07 23:46:11'),
+('d1aa2ecb04464965934b4b878b8d92ed', '32000000000000000000000000000007', '24000000000000000000000000000002', '{\"diem_tong\": 6.8}', '{\"diem_tong\": 6.8}', 'Duyet diem LHP', '2026-05-07 21:09:57'),
+('d4058de2ae4047708bef08bb979a26aa', 'dfa0ec99daa54d75b34f758477f7d576', '24000000000000000000000000000011', '{\"diem_cc\": null, \"diem_ck\": null, \"diem_gk\": null}', '{\"diem_cc\": 10.0, \"diem_ck\": 10.0, \"diem_gk\": 10.0}', 'Luu nhap diem', '2026-05-08 01:43:11'),
+('d8b552c9785b45b8989f36ba8b01dd13', '32000000000000000000000000000005', '24000000000000000000000000000002', '{\"diem_tong\": 7.9}', '{\"diem_tong\": 7.9}', 'Duyet diem LHP', '2026-05-07 21:06:59'),
+('dcb68b54a7bf4e55b5b035a3c06a4b95', 'f9901eb43ae54a898488db72e617cc8c', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 6.5}', 'Duyet diem LHP', '2026-05-08 01:06:25'),
+('e6971bda504044189764f7f593a7b8be', 'a812f0b65f35438eaadd1035da9f0369', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 5.5}', 'Duyet diem LHP', '2026-05-08 01:06:25'),
+('e81dbb87ccc341d2a51bcce8ce485828', '816b3aa773974bbb90f10a880c81e669', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 10.0}', 'Duyet diem LHP', '2026-05-08 01:29:06'),
+('eb1faff6e6ca4b53be83a5d470c01752', 'be96fcead2b74de692eccca1e8aef640', '24000000000000000000000000000002', '{\"diem_tong\": 8.7}', '{\"diem_tong\": 8.7}', 'Duyet diem LHP', '2026-05-08 01:37:37'),
+('eb80689f659849878df90001606a0d09', '32000000000000000000000000000008', '24000000000000000000000000000002', '{\"diem_tong\": 6.0}', '{\"diem_tong\": 6.0}', 'Duyet diem LHP', '2026-05-07 23:46:11'),
+('f15183fbded24127a9d43b2d33b04d2a', '32000000000000000000000000000004', '24000000000000000000000000000002', '{\"diem_tong\": 8.2}', '{\"diem_tong\": 8.2}', 'Duyet diem LHP', '2026-05-07 23:46:11'),
+('fdfbe0c624d54b86ad5ef5c74399bbad', '8c208350b2ac4ef399ce826cbaeabf61', '24000000000000000000000000000002', '{\"diem_tong\": null}', '{\"diem_tong\": 8.4}', 'Duyet diem LHP', '2026-05-08 01:29:06');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ds_lhp`
+--
+
+CREATE TABLE `ds_lhp` (
+  `ds_lhp_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `lhp_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sinh_vien_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `diem_cc` decimal(4,1) DEFAULT NULL,
+  `diem_gk` decimal(4,1) DEFAULT NULL,
+  `diem_ck` decimal(4,1) DEFAULT NULL,
+  `diem_tong` decimal(4,1) DEFAULT NULL,
+  `trang_thai_diem` enum('CHUA_NHAP','NHAP_NHAP','CHO_DUYET','DA_DUYET') COLLATE utf8mb4_unicode_ci DEFAULT 'CHUA_NHAP'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE giao_vu (
-    giao_vu_id VARCHAR(32) PRIMARY KEY,
-    tai_khoan_id VARCHAR(32) UNIQUE NOT NULL,
-    ma_giao_vu VARCHAR(20) UNIQUE NOT NULL,
-    ho_ten VARCHAR(100) NOT NULL,
-    khoa_id VARCHAR(32),
-    so_dien_thoai VARCHAR(15),
-    FOREIGN KEY (tai_khoan_id) REFERENCES tai_khoan(tai_khoan_id),
-    FOREIGN KEY (khoa_id) REFERENCES khoa_bo_mon(khoa_id)
+--
+-- Dumping data for table `ds_lhp`
+--
+
+INSERT INTO `ds_lhp` (`ds_lhp_id`, `lhp_id`, `sinh_vien_id`, `diem_cc`, `diem_gk`, `diem_ck`, `diem_tong`, `trang_thai_diem`) VALUES
+('0b2c7bc57c58460c97ce090625467e24', 'b988b5e3a085473baafa0d66b004cedc', 'b2f1842712744ad3b5682514c82ccd82', '10.0', '8.0', '7.0', '7.6', 'DA_DUYET'),
+('0b73eb66fafe4883848a63f0acec8bc8', 'b988b5e3a085473baafa0d66b004cedc', '31000000000000000000000000000002', '10.0', '8.5', '8.0', '8.4', 'DA_DUYET'),
+('1562531cab30481fbc42ffcba8dfbb7f', 'f74c274a3b1045d7a558e9f4b480d55e', '31000000000000000000000000000030', '4.0', '5.0', '6.0', '5.5', 'DA_DUYET'),
+('1fb678b8653746c996b50f1e6585d0b0', 'f74c274a3b1045d7a558e9f4b480d55e', 'b2f1842712744ad3b5682514c82ccd82', '5.0', '9.0', '8.0', '8.0', 'DA_DUYET'),
+('1fd08dcea9974f3bbda1611d67107f56', 'f74c274a3b1045d7a558e9f4b480d55e', '31000000000000000000000000000009', '8.0', '7.0', '9.0', '8.3', 'DA_DUYET'),
+('32000000000000000000000000000001', '27000000000000000000000000000001', '31000000000000000000000000000001', '9.6', '9.4', '9.1', '9.2', 'DA_DUYET'),
+('32000000000000000000000000000002', '27000000000000000000000000000001', '31000000000000000000000000000002', '9.2', '9.0', '8.7', '8.8', 'DA_DUYET'),
+('32000000000000000000000000000003', '27000000000000000000000000000001', '31000000000000000000000000000003', '9.0', '8.8', '8.5', '8.6', 'DA_DUYET'),
+('32000000000000000000000000000004', '27000000000000000000000000000001', '31000000000000000000000000000004', '8.6', '8.4', '8.1', '8.2', 'DA_DUYET'),
+('32000000000000000000000000000005', '27000000000000000000000000000001', '31000000000000000000000000000005', '8.3', '8.1', '7.8', '7.9', 'DA_DUYET'),
+('32000000000000000000000000000006', '27000000000000000000000000000001', '31000000000000000000000000000006', '7.5', '7.3', '7.0', '7.1', 'DA_DUYET'),
+('32000000000000000000000000000007', '27000000000000000000000000000001', '31000000000000000000000000000007', '7.2', '7.0', '6.7', '6.8', 'DA_DUYET'),
+('32000000000000000000000000000008', '27000000000000000000000000000001', '31000000000000000000000000000008', '6.4', '6.2', '5.9', '6.0', 'DA_DUYET'),
+('32000000000000000000000000000009', '27000000000000000000000000000001', '31000000000000000000000000000009', '4.9', '4.7', '4.4', '4.5', 'DA_DUYET'),
+('32000000000000000000000000000010', '27000000000000000000000000000001', '31000000000000000000000000000010', '3.6', '3.4', '3.1', '3.2', 'DA_DUYET'),
+('34000000000000000000000000000001', '27000000000000000000000000000002', '31000000000000000000000000000001', '6.8', '6.2', '5.8', NULL, 'CHO_DUYET'),
+('34000000000000000000000000000002', '27000000000000000000000000000002', '31000000000000000000000000000002', '7.6', '6.9', '6.6', NULL, 'CHO_DUYET'),
+('34000000000000000000000000000003', '27000000000000000000000000000002', '31000000000000000000000000000003', '8.4', '7.6', '7.4', NULL, 'CHO_DUYET'),
+('34000000000000000000000000000004', '27000000000000000000000000000002', '31000000000000000000000000000004', '6.0', '8.3', '8.2', NULL, 'CHO_DUYET'),
+('34000000000000000000000000000005', '27000000000000000000000000000002', '31000000000000000000000000000005', '6.8', '5.5', '9.0', NULL, 'CHO_DUYET'),
+('34000000000000000000000000000006', '27000000000000000000000000000002', '31000000000000000000000000000006', '7.6', '6.2', '5.0', NULL, 'CHO_DUYET'),
+('34000000000000000000000000000007', '27000000000000000000000000000002', '31000000000000000000000000000007', '8.4', '6.9', '5.8', NULL, 'CHO_DUYET'),
+('34000000000000000000000000000008', '27000000000000000000000000000002', '31000000000000000000000000000008', '6.0', '7.6', '6.6', NULL, 'CHO_DUYET'),
+('34000000000000000000000000000009', '27000000000000000000000000000002', '31000000000000000000000000000009', '6.8', '8.3', '7.4', NULL, 'CHO_DUYET'),
+('34000000000000000000000000000010', '27000000000000000000000000000002', '31000000000000000000000000000010', '7.6', '5.5', '8.2', NULL, 'CHO_DUYET'),
+('36000000000000000000000000000001', '27000000000000000000000000000003', '31000000000000000000000000000011', '6.9', '6.3', NULL, NULL, 'NHAP_NHAP'),
+('36000000000000000000000000000002', '27000000000000000000000000000003', '31000000000000000000000000000012', '7.3', '6.8', NULL, NULL, 'NHAP_NHAP'),
+('36000000000000000000000000000003', '27000000000000000000000000000003', '31000000000000000000000000000013', '7.7', '7.3', NULL, NULL, 'NHAP_NHAP'),
+('36000000000000000000000000000004', '27000000000000000000000000000003', '31000000000000000000000000000014', '8.1', '7.8', NULL, NULL, 'NHAP_NHAP'),
+('36000000000000000000000000000005', '27000000000000000000000000000003', '31000000000000000000000000000015', '8.5', '8.3', NULL, NULL, 'NHAP_NHAP'),
+('36000000000000000000000000000006', '27000000000000000000000000000003', '31000000000000000000000000000016', NULL, NULL, NULL, NULL, 'CHUA_NHAP'),
+('36000000000000000000000000000007', '27000000000000000000000000000003', '31000000000000000000000000000017', NULL, NULL, NULL, NULL, 'CHUA_NHAP'),
+('36000000000000000000000000000008', '27000000000000000000000000000003', '31000000000000000000000000000018', NULL, NULL, NULL, NULL, 'CHUA_NHAP'),
+('36000000000000000000000000000009', '27000000000000000000000000000003', '31000000000000000000000000000019', NULL, NULL, NULL, NULL, 'CHUA_NHAP'),
+('36000000000000000000000000000010', '27000000000000000000000000000003', '31000000000000000000000000000020', NULL, NULL, NULL, NULL, 'CHUA_NHAP'),
+('42ada042e37f4e64839b8af85e71bbcf', 'f74c274a3b1045d7a558e9f4b480d55e', '31000000000000000000000000000012', '7.0', '8.0', '9.0', '8.5', 'DA_DUYET'),
+('47d90f9176034db8b36d00822925094f', 'b988b5e3a085473baafa0d66b004cedc', '31000000000000000000000000000011', NULL, NULL, NULL, NULL, 'CHUA_NHAP'),
+('6855fc7b8b604888b6ed4aa9237163e7', 'f74c274a3b1045d7a558e9f4b480d55e', '31000000000000000000000000000002', '10.0', '8.0', '6.0', '7.0', 'DA_DUYET'),
+('6f3dfff7782740d49dffd026d81834db', '4fb011d7f34c4d5ebe5c994afd274c8a', 'b2f1842712744ad3b5682514c82ccd82', NULL, NULL, NULL, NULL, 'CHUA_NHAP'),
+('816b3aa773974bbb90f10a880c81e669', 'c967bf104a2f43ff96d223bea6e5b65f', 'b2f1842712744ad3b5682514c82ccd82', '10.0', '10.0', '10.0', '10.0', 'DA_DUYET'),
+('8c208350b2ac4ef399ce826cbaeabf61', 'c967bf104a2f43ff96d223bea6e5b65f', '31000000000000000000000000000002', '10.0', '8.5', '8.0', '8.4', 'DA_DUYET'),
+('a812f0b65f35438eaadd1035da9f0369', 'f74c274a3b1045d7a558e9f4b480d55e', '31000000000000000000000000000025', '7.0', '6.0', '5.0', '5.5', 'DA_DUYET'),
+('be96fcead2b74de692eccca1e8aef640', 'c967bf104a2f43ff96d223bea6e5b65f', '31000000000000000000000000000004', '10.0', '8.5', '8.5', '8.7', 'DA_DUYET'),
+('cce4a96f63f547bebe8a74768319325d', 'f74c274a3b1045d7a558e9f4b480d55e', '31000000000000000000000000000023', '8.0', '9.0', '7.0', '7.7', 'DA_DUYET'),
+('dfa0ec99daa54d75b34f758477f7d576', 'b988b5e3a085473baafa0d66b004cedc', '31000000000000000000000000000001', '10.0', '10.0', '10.0', '10.0', 'DA_DUYET'),
+('ef96631b5b50428c972077ad68dab741', 'f74c274a3b1045d7a558e9f4b480d55e', '31000000000000000000000000000001', '10.0', '10.0', '10.0', '10.0', 'DA_DUYET'),
+('f9901eb43ae54a898488db72e617cc8c', 'f74c274a3b1045d7a558e9f4b480d55e', '31000000000000000000000000000008', '5.0', '6.0', '7.0', '6.5', 'DA_DUYET');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `giang_vien`
+--
+
+CREATE TABLE `giang_vien` (
+  `giang_vien_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tai_khoan_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ma_gv` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ho_ten` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `hoc_vi` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `hoc_ham` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `khoa_id` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `so_dien_thoai` varchar(15) COLLATE utf8mb4_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE nien_khoa (
-    nien_khoa_id VARCHAR(32) PRIMARY KEY,
-    ten_nien_khoa VARCHAR(20) NOT NULL,
-    nam_bat_dau INT NOT NULL
+--
+-- Dumping data for table `giang_vien`
+--
+
+INSERT INTO `giang_vien` (`giang_vien_id`, `tai_khoan_id`, `ma_gv`, `ho_ten`, `hoc_vi`, `hoc_ham`, `khoa_id`, `so_dien_thoai`) VALUES
+('25000000000000000000000000000001', '24000000000000000000000000000011', 'gv01', 'Giang vien 01', 'Thac si', NULL, '20000000000000000000000000000001', '0911000001'),
+('25000000000000000000000000000002', '24000000000000000000000000000012', 'gv02', 'Giang vien 02', 'Thac si', NULL, '20000000000000000000000000000001', '0911000002'),
+('25000000000000000000000000000003', '24000000000000000000000000000013', 'gv03', 'Giang vien 03', 'Tien si', NULL, '20000000000000000000000000000001', '0911000003'),
+('25000000000000000000000000000004', '24000000000000000000000000000014', 'gv04', 'Giang vien 04', 'Tien si', NULL, '20000000000000000000000000000001', '0911000004'),
+('25000000000000000000000000000005', '24000000000000000000000000000015', 'gv05', 'Giang vien 05', 'Thac si', NULL, '20000000000000000000000000000001', '0911000005'),
+('25000000000000000000000000000006', '24000000000000000000000000000016', 'gv06', 'ThS giang vien 06', 'Thac si', NULL, '20000000000000000000000000000001', '0911000006'),
+('25000000000000000000000000000007', '24000000000000000000000000000017', 'gv07', 'Tien si giang vien 07', 'Tien si', NULL, '20000000000000000000000000000001', '0911000007'),
+('25000000000000000000000000000008', '24000000000000000000000000000018', 'gv08', 'Giang vien 08', 'Thac si', NULL, '20000000000000000000000000000001', '0911000008'),
+('25000000000000000000000000000009', '24000000000000000000000000000019', 'gv09', 'Giang vien 09', 'Tien si', NULL, '20000000000000000000000000000001', '0911000009'),
+('25000000000000000000000000000010', '24000000000000000000000000000020', 'gv10', 'Giang vien 10', 'Thac si', NULL, '20000000000000000000000000000001', '0911000010');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `giao_vu`
+--
+
+CREATE TABLE `giao_vu` (
+  `giao_vu_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tai_khoan_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ma_giao_vu` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ho_ten` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `khoa_id` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `so_dien_thoai` varchar(15) COLLATE utf8mb4_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE lop_sinh_hoat (
-    lop_id VARCHAR(32) PRIMARY KEY,
-    ma_lop VARCHAR(20) UNIQUE NOT NULL,
-    ten_lop VARCHAR(50) NOT NULL,
-    nien_khoa_id VARCHAR(32),
-    khoa_id VARCHAR(32),
-    FOREIGN KEY (nien_khoa_id) REFERENCES nien_khoa(nien_khoa_id),
-    FOREIGN KEY (khoa_id) REFERENCES khoa_bo_mon(khoa_id)
+--
+-- Dumping data for table `giao_vu`
+--
+
+INSERT INTO `giao_vu` (`giao_vu_id`, `tai_khoan_id`, `ma_giao_vu`, `ho_ten`, `khoa_id`, `so_dien_thoai`) VALUES
+('25500000000000000000000000000001', '24000000000000000000000000000002', 'GVU01', 'Giao vu 01', '20000000000000000000000000000001', '0909000001'),
+('25500000000000000000000000000002', '24000000000000000000000000000003', 'GVU02', 'Giao vu 02', '20000000000000000000000000000001', '0909000002'),
+('25500000000000000000000000000003', '24000000000000000000000000000005', 'GVU03', 'Giao vu 03', '20000000000000000000000000000001', '0909000003');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hoc_ky`
+--
+
+CREATE TABLE `hoc_ky` (
+  `hoc_ky_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ten_hoc_ky` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nam_hoc` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ky_hoc` int NOT NULL,
+  `is_hien_tai` tinyint(1) DEFAULT '0',
+  `ngay_bat_dau` date DEFAULT NULL,
+  `ngay_ket_thuc` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE sinh_vien (
-    sinh_vien_id VARCHAR(32) PRIMARY KEY,
-    tai_khoan_id VARCHAR(32) UNIQUE NOT NULL,
-    msv VARCHAR(20) UNIQUE NOT NULL,
-    ho_ten VARCHAR(100) NOT NULL,
-    ngay_sinh DATE,
-    gioi_tinh ENUM('Nam','Nu','Khac'),
-    lop_id VARCHAR(32),
-    trang_thai ENUM('DANG_HOC','BAO_LUU','TOT_NGHIEP','BUOC_THOI_HOC') DEFAULT 'DANG_HOC',
-    FOREIGN KEY (tai_khoan_id) REFERENCES tai_khoan(tai_khoan_id),
-    FOREIGN KEY (lop_id) REFERENCES lop_sinh_hoat(lop_id)
+--
+-- Dumping data for table `hoc_ky`
+--
+
+INSERT INTO `hoc_ky` (`hoc_ky_id`, `ten_hoc_ky`, `nam_hoc`, `ky_hoc`, `is_hien_tai`, `ngay_bat_dau`, `ngay_ket_thuc`) VALUES
+('0c88efdbcd07954d924b7141361c03d4', 'Hoc ky he', '2026-2027', 3, 0, '2026-05-30', '2026-08-28'),
+('22000000000000000000000000000001', 'HK1 2023-2024', '2023-2024', 1, 0, '2023-09-01', '2024-01-15'),
+('22000000000000000000000000000002', 'HK2 2023-2024', '2023-2024', 2, 0, '2024-01-22', '2024-05-31'),
+('22000000000000000000000000000003', 'HK1 2024-2025', '2024-2025', 1, 0, '2024-09-01', '2025-01-15'),
+('667de0dd0ad76097a50426ad9c2d5e62', 'Hoc ky 2', '2027-2028', 2, 1, '2026-06-25', '2026-07-17'),
+('f0163732da30b9be58152da9d129f305', 'Hoc ky 1', '2026-2027', 1, 0, NULL, NULL),
+('f02ad90fe64dbb530a2bff683995ebbc', 'Hoc ky 1', '2027-2028', 1, 0, '2026-05-08', '2026-05-30');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ket_qua_hoc_ky`
+--
+
+CREATE TABLE `ket_qua_hoc_ky` (
+  `kqhk_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sinh_vien_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `hoc_ky_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `gpa_hk_he10` decimal(4,2) DEFAULT NULL,
+  `gpa_hk_he4` decimal(4,2) DEFAULT NULL,
+  `gpa_tich_luy_he10` decimal(4,2) DEFAULT NULL,
+  `gpa_tich_luy_he4` decimal(4,2) DEFAULT NULL,
+  `tong_tin_chi_dat` int DEFAULT '0',
+  `xep_loai` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `muc_canh_bao` int DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE hoc_ky (
-    hoc_ky_id VARCHAR(32) PRIMARY KEY,
-    ten_hoc_ky VARCHAR(50) NOT NULL,
-    nam_hoc VARCHAR(20) NOT NULL,
-    ky_hoc INT NOT NULL,
-    is_hien_tai BOOLEAN DEFAULT FALSE,
-    ngay_bat_dau DATE,
-    ngay_ket_thuc DATE
+--
+-- Dumping data for table `ket_qua_hoc_ky`
+--
+
+INSERT INTO `ket_qua_hoc_ky` (`kqhk_id`, `sinh_vien_id`, `hoc_ky_id`, `gpa_hk_he10`, `gpa_hk_he4`, `gpa_tich_luy_he10`, `gpa_tich_luy_he4`, `tong_tin_chi_dat`, `xep_loai`, `muc_canh_bao`) VALUES
+('16dfa0309c434a768362802c62d49882', '31000000000000000000000000000006', '22000000000000000000000000000002', '7.10', '3.00', '7.10', '3.00', 3, 'Kha', 0),
+('17628a4648b3425abd1fedb73e68fe7e', '31000000000000000000000000000025', '0c88efdbcd07954d924b7141361c03d4', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1),
+('1b6de147e6a04568a930c9488a23ab00', '31000000000000000000000000000001', '22000000000000000000000000000002', '9.20', '4.00', '9.20', '4.00', 3, 'Xuat sac', 0),
+('1f825f2694cc4b418c2987f6a388ec7b', '31000000000000000000000000000011', '22000000000000000000000000000002', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1),
+('22510d2d44c540059a46667d0af761c3', '31000000000000000000000000000008', '22000000000000000000000000000002', '6.00', '2.00', '6.00', '2.00', 3, 'Trung binh', 0),
+('2413df9f7e1d463ba22481c0ad5b7190', '31000000000000000000000000000013', '22000000000000000000000000000002', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1),
+('335cf7e2e4ea4fc183638002c8faf683', '31000000000000000000000000000019', '22000000000000000000000000000002', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1),
+('341d868a42404a80af7d64ac0556d008', '31000000000000000000000000000002', 'f02ad90fe64dbb530a2bff683995ebbc', '8.40', '3.50', '8.57', '3.71', 7, 'Xuat sac', 0),
+('352acfb67c354f849125b4a6ef31dc5a', '31000000000000000000000000000003', '22000000000000000000000000000002', '8.60', '4.00', '8.60', '4.00', 3, 'Xuat sac', 0),
+('36d4d9958c3c48df9fc845550559334e', '31000000000000000000000000000015', '22000000000000000000000000000002', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1),
+('3b430f16442c44f581359c86eed79a97', '31000000000000000000000000000002', '0c88efdbcd07954d924b7141361c03d4', '0.00', '0.00', '8.80', '4.00', 3, 'Xuat sac', 0),
+('3c19946f3ab14ee0b461615622eb4b19', '31000000000000000000000000000002', '667de0dd0ad76097a50426ad9c2d5e62', '8.40', '3.50', '8.57', '3.71', 7, 'Xuat sac', 0),
+('49f027aae772433db16f9a7e87bc9a6d', 'b2f1842712744ad3b5682514c82ccd82', '0c88efdbcd07954d924b7141361c03d4', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1),
+('6da17718469c429c968b26dac5d0fc2c', '31000000000000000000000000000018', '22000000000000000000000000000002', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1),
+('6dbb3755a475497f8c33a3204efb634e', '31000000000000000000000000000016', '22000000000000000000000000000002', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1),
+('6e73e63fc3c04cbb805fe181b965cb27', '31000000000000000000000000000001', '0c88efdbcd07954d924b7141361c03d4', '0.00', '0.00', '9.20', '4.00', 3, 'Xuat sac', 0),
+('6f51a86ac07b49a594178fccf494d32f', '31000000000000000000000000000008', '0c88efdbcd07954d924b7141361c03d4', '0.00', '0.00', '6.00', '2.00', 3, 'Trung binh', 0),
+('7d34765747a645ed909b2b095fed2229', '31000000000000000000000000000010', '22000000000000000000000000000002', '3.20', '0.00', '3.20', '0.00', 3, 'Kem', 1),
+('7d4cd9791a224926ba969f9989922cc4', '31000000000000000000000000000020', '22000000000000000000000000000002', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1),
+('88de8c2e2c40462698bb7afec2ddca62', '31000000000000000000000000000014', '22000000000000000000000000000002', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1),
+('895f07fc78db4b47bebbdd4020892c95', 'b2f1842712744ad3b5682514c82ccd82', 'f02ad90fe64dbb530a2bff683995ebbc', '10.00', '4.00', '10.00', '4.00', 4, 'Xuat sac', 0),
+('94381dbf76a34bb0b6f50c4aeedbb417', '31000000000000000000000000000017', '22000000000000000000000000000002', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1),
+('98d222e5fc474d4ead08dbeb7ebcd6df', '31000000000000000000000000000012', '22000000000000000000000000000002', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1),
+('ae039a0753d94c0581a69b8b9201b3b9', '31000000000000000000000000000005', '22000000000000000000000000000002', '7.90', '3.50', '7.90', '3.50', 3, 'Gioi', 0),
+('b091e22a2b594a4d88ef8a2f32ccf142', '31000000000000000000000000000009', '0c88efdbcd07954d924b7141361c03d4', '0.00', '0.00', '4.50', '1.00', 3, 'Yeu', 2),
+('bb813b16010d482f8ca84f893ef555cf', '31000000000000000000000000000002', '22000000000000000000000000000002', '8.80', '4.00', '8.80', '4.00', 3, 'Xuat sac', 0),
+('c44720ae9c22433083c2385b63a1f4bf', 'b2f1842712744ad3b5682514c82ccd82', '667de0dd0ad76097a50426ad9c2d5e62', '7.60', '3.00', '7.60', '3.00', 4, 'Kha', 0),
+('dd637ed8ae6f423c924b70e4bc93d311', '31000000000000000000000000000009', '22000000000000000000000000000002', '4.50', '1.00', '4.50', '1.00', 3, 'Yeu', 1),
+('e39f9d844d7845ca9c6915f4058d4e12', '31000000000000000000000000000030', '0c88efdbcd07954d924b7141361c03d4', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1),
+('e636e3dd742142ad8aef019c3a15ca83', '31000000000000000000000000000004', '22000000000000000000000000000002', '8.20', '3.50', '8.20', '3.50', 3, 'Gioi', 0),
+('ed47e5852eed48c1b207dfc0ca193a80', '31000000000000000000000000000001', '667de0dd0ad76097a50426ad9c2d5e62', '10.00', '4.00', '9.66', '4.00', 7, 'Xuat sac', 0),
+('f5b5aac5ab4744fc9407c790381d1129', '31000000000000000000000000000004', 'f02ad90fe64dbb530a2bff683995ebbc', '8.70', '4.00', '8.49', '3.79', 7, 'Xuat sac', 0),
+('f5f1b945ff3548129d185428c046499b', '31000000000000000000000000000012', '0c88efdbcd07954d924b7141361c03d4', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 2),
+('f81606dd7d77497fb045b4e50e485860', '31000000000000000000000000000007', '22000000000000000000000000000002', '6.80', '2.50', '6.80', '2.50', 3, 'Kha', 0),
+('f9d1d56a16264065a4a88bc4baf59292', '31000000000000000000000000000023', '0c88efdbcd07954d924b7141361c03d4', '0.00', '0.00', '0.00', '0.00', 0, 'Kem', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `khoa_bo_mon`
+--
+
+CREATE TABLE `khoa_bo_mon` (
+  `khoa_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ten_khoa` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ma_khoa` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE mon_hoc (
-    mon_hoc_id VARCHAR(32) PRIMARY KEY,
-    ma_mon VARCHAR(20) UNIQUE NOT NULL,
-    ten_mon VARCHAR(100) NOT NULL,
-    so_tin_chi INT NOT NULL,
-    tinh_gpa BOOLEAN DEFAULT TRUE
+--
+-- Dumping data for table `khoa_bo_mon`
+--
+
+INSERT INTO `khoa_bo_mon` (`khoa_id`, `ten_khoa`, `ma_khoa`) VALUES
+('20000000000000000000000000000001', 'Khoa Cong nghe thong tin', 'CNTT');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lich_su_hoc_mon`
+--
+
+CREATE TABLE `lich_su_hoc_mon` (
+  `ls_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sinh_vien_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mon_hoc_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `lhp_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `hoc_ky_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `lan_hoc` int DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE lop_hoc_phan (
-    lhp_id VARCHAR(32) PRIMARY KEY,
-    ma_lhp VARCHAR(30) UNIQUE NOT NULL,
-    mon_hoc_id VARCHAR(32) NOT NULL,
-    hoc_ky_id VARCHAR(32) NOT NULL,
-    giang_vien_id VARCHAR(32),
-    ty_le_cc DECIMAL(5,2) NOT NULL,
-    ty_le_gk DECIMAL(5,2) NOT NULL,
-    ty_le_ck DECIMAL(5,2) NOT NULL,
-    trang_thai ENUM('MO','DANG_NHAP','CHO_DUYET','DA_DUYET','DONG') DEFAULT 'MO',
-    cong_nhap_diem_mo BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (mon_hoc_id) REFERENCES mon_hoc(mon_hoc_id),
-    FOREIGN KEY (hoc_ky_id) REFERENCES hoc_ky(hoc_ky_id),
-    FOREIGN KEY (giang_vien_id) REFERENCES giang_vien(giang_vien_id),
-    CONSTRAINT chk_lhp_ty_le_100 CHECK (ROUND(ty_le_cc + ty_le_gk + ty_le_ck, 2) = 100.00)
+--
+-- Dumping data for table `lich_su_hoc_mon`
+--
+
+INSERT INTO `lich_su_hoc_mon` (`ls_id`, `sinh_vien_id`, `mon_hoc_id`, `lhp_id`, `hoc_ky_id`, `lan_hoc`) VALUES
+('03595bc862d04043a9368c65acfdfdb2', '31000000000000000000000000000002', '26000000000000000000000000000005', 'f74c274a3b1045d7a558e9f4b480d55e', '0c88efdbcd07954d924b7141361c03d4', 1),
+('0fd6c438b7d6417fa9a823943e99f07c', '31000000000000000000000000000004', '27d7d39676933a4bbaad4e89533d3db1', 'c967bf104a2f43ff96d223bea6e5b65f', 'f02ad90fe64dbb530a2bff683995ebbc', 1),
+('199f678f8ca4464aa37b742db482ae42', '31000000000000000000000000000025', '26000000000000000000000000000005', 'f74c274a3b1045d7a558e9f4b480d55e', '0c88efdbcd07954d924b7141361c03d4', 1),
+('33000000000000000000000000000001', '31000000000000000000000000000001', '26000000000000000000000000000001', '27000000000000000000000000000001', '22000000000000000000000000000002', 1),
+('33000000000000000000000000000002', '31000000000000000000000000000002', '26000000000000000000000000000001', '27000000000000000000000000000001', '22000000000000000000000000000002', 1),
+('33000000000000000000000000000003', '31000000000000000000000000000003', '26000000000000000000000000000001', '27000000000000000000000000000001', '22000000000000000000000000000002', 1),
+('33000000000000000000000000000004', '31000000000000000000000000000004', '26000000000000000000000000000001', '27000000000000000000000000000001', '22000000000000000000000000000002', 1),
+('33000000000000000000000000000005', '31000000000000000000000000000005', '26000000000000000000000000000001', '27000000000000000000000000000001', '22000000000000000000000000000002', 1),
+('33000000000000000000000000000006', '31000000000000000000000000000006', '26000000000000000000000000000001', '27000000000000000000000000000001', '22000000000000000000000000000002', 1),
+('33000000000000000000000000000007', '31000000000000000000000000000007', '26000000000000000000000000000001', '27000000000000000000000000000001', '22000000000000000000000000000002', 1),
+('33000000000000000000000000000008', '31000000000000000000000000000008', '26000000000000000000000000000001', '27000000000000000000000000000001', '22000000000000000000000000000002', 1),
+('33000000000000000000000000000009', '31000000000000000000000000000009', '26000000000000000000000000000001', '27000000000000000000000000000001', '22000000000000000000000000000002', 1),
+('33000000000000000000000000000010', '31000000000000000000000000000010', '26000000000000000000000000000001', '27000000000000000000000000000001', '22000000000000000000000000000002', 1),
+('35000000000000000000000000000001', '31000000000000000000000000000001', '26000000000000000000000000000002', '27000000000000000000000000000002', '22000000000000000000000000000002', 1),
+('35000000000000000000000000000002', '31000000000000000000000000000002', '26000000000000000000000000000002', '27000000000000000000000000000002', '22000000000000000000000000000002', 1),
+('35000000000000000000000000000003', '31000000000000000000000000000003', '26000000000000000000000000000002', '27000000000000000000000000000002', '22000000000000000000000000000002', 1),
+('35000000000000000000000000000004', '31000000000000000000000000000004', '26000000000000000000000000000002', '27000000000000000000000000000002', '22000000000000000000000000000002', 1),
+('35000000000000000000000000000005', '31000000000000000000000000000005', '26000000000000000000000000000002', '27000000000000000000000000000002', '22000000000000000000000000000002', 1),
+('35000000000000000000000000000006', '31000000000000000000000000000006', '26000000000000000000000000000002', '27000000000000000000000000000002', '22000000000000000000000000000002', 1),
+('35000000000000000000000000000007', '31000000000000000000000000000007', '26000000000000000000000000000002', '27000000000000000000000000000002', '22000000000000000000000000000002', 1),
+('35000000000000000000000000000008', '31000000000000000000000000000008', '26000000000000000000000000000002', '27000000000000000000000000000002', '22000000000000000000000000000002', 1),
+('35000000000000000000000000000009', '31000000000000000000000000000009', '26000000000000000000000000000002', '27000000000000000000000000000002', '22000000000000000000000000000002', 1),
+('35000000000000000000000000000010', '31000000000000000000000000000010', '26000000000000000000000000000002', '27000000000000000000000000000002', '22000000000000000000000000000002', 1),
+('37000000000000000000000000000001', '31000000000000000000000000000011', '26000000000000000000000000000003', '27000000000000000000000000000003', '22000000000000000000000000000002', 1),
+('37000000000000000000000000000002', '31000000000000000000000000000012', '26000000000000000000000000000003', '27000000000000000000000000000003', '22000000000000000000000000000002', 1),
+('37000000000000000000000000000003', '31000000000000000000000000000013', '26000000000000000000000000000003', '27000000000000000000000000000003', '22000000000000000000000000000002', 1),
+('37000000000000000000000000000004', '31000000000000000000000000000014', '26000000000000000000000000000003', '27000000000000000000000000000003', '22000000000000000000000000000002', 1),
+('37000000000000000000000000000005', '31000000000000000000000000000015', '26000000000000000000000000000003', '27000000000000000000000000000003', '22000000000000000000000000000002', 1),
+('37000000000000000000000000000006', '31000000000000000000000000000016', '26000000000000000000000000000003', '27000000000000000000000000000003', '22000000000000000000000000000002', 1),
+('37000000000000000000000000000007', '31000000000000000000000000000017', '26000000000000000000000000000003', '27000000000000000000000000000003', '22000000000000000000000000000002', 1),
+('37000000000000000000000000000008', '31000000000000000000000000000018', '26000000000000000000000000000003', '27000000000000000000000000000003', '22000000000000000000000000000002', 1),
+('37000000000000000000000000000009', '31000000000000000000000000000019', '26000000000000000000000000000003', '27000000000000000000000000000003', '22000000000000000000000000000002', 1),
+('37000000000000000000000000000010', '31000000000000000000000000000020', '26000000000000000000000000000003', '27000000000000000000000000000003', '22000000000000000000000000000002', 1),
+('54c4e640180c4e72a774f0385b67abee', '31000000000000000000000000000008', '26000000000000000000000000000005', 'f74c274a3b1045d7a558e9f4b480d55e', '0c88efdbcd07954d924b7141361c03d4', 1),
+('69040f12f06547138c5195c1cf26f3ce', '31000000000000000000000000000012', '26000000000000000000000000000005', 'f74c274a3b1045d7a558e9f4b480d55e', '0c88efdbcd07954d924b7141361c03d4', 1),
+('7516c8a089e34770aa67ffd9ed1f6856', '31000000000000000000000000000002', '27d7d39676933a4bbaad4e89533d3db1', 'b988b5e3a085473baafa0d66b004cedc', '667de0dd0ad76097a50426ad9c2d5e62', 2),
+('75a7b03ce6b348339ee769d30f7fa8d0', '31000000000000000000000000000001', '27d7d39676933a4bbaad4e89533d3db1', 'b988b5e3a085473baafa0d66b004cedc', '667de0dd0ad76097a50426ad9c2d5e62', 1),
+('8fda3a89e5bf49268677e05abd20a851', '31000000000000000000000000000001', '26000000000000000000000000000005', 'f74c274a3b1045d7a558e9f4b480d55e', '0c88efdbcd07954d924b7141361c03d4', 1),
+('976a592442934c42b60e3e788b7e1607', '31000000000000000000000000000009', '26000000000000000000000000000005', 'f74c274a3b1045d7a558e9f4b480d55e', '0c88efdbcd07954d924b7141361c03d4', 1),
+('c5ba55f6bdab4936af005e99bdf617fb', '31000000000000000000000000000023', '26000000000000000000000000000005', 'f74c274a3b1045d7a558e9f4b480d55e', '0c88efdbcd07954d924b7141361c03d4', 1),
+('c8bedf722b404a968356e34e98005c26', 'b2f1842712744ad3b5682514c82ccd82', '27d7d39676933a4bbaad4e89533d3db1', 'c967bf104a2f43ff96d223bea6e5b65f', 'f02ad90fe64dbb530a2bff683995ebbc', 1),
+('d8201fae33d041debc12ad1389a38e10', '31000000000000000000000000000011', '27d7d39676933a4bbaad4e89533d3db1', 'b988b5e3a085473baafa0d66b004cedc', '667de0dd0ad76097a50426ad9c2d5e62', 1),
+('e1b4380ba9524a918e69e8b1f49a2dca', 'b2f1842712744ad3b5682514c82ccd82', '26000000000000000000000000000005', 'f74c274a3b1045d7a558e9f4b480d55e', '0c88efdbcd07954d924b7141361c03d4', 1),
+('e3efe09973e54b7396a044cc7325aef1', 'b2f1842712744ad3b5682514c82ccd82', '27d7d39676933a4bbaad4e89533d3db1', 'b988b5e3a085473baafa0d66b004cedc', '667de0dd0ad76097a50426ad9c2d5e62', 2),
+('e930ea1926eb4d3eb322cbc6074b37bb', '31000000000000000000000000000002', '27d7d39676933a4bbaad4e89533d3db1', 'c967bf104a2f43ff96d223bea6e5b65f', 'f02ad90fe64dbb530a2bff683995ebbc', 1),
+('eaf2d9a4aeb34f2cbb98d6d97acdff1f', 'b2f1842712744ad3b5682514c82ccd82', '26000000000000000000000000000001', '4fb011d7f34c4d5ebe5c994afd274c8a', '22000000000000000000000000000003', 1),
+('f7288ac6e40740539cb5c4075768c19a', '31000000000000000000000000000030', '26000000000000000000000000000005', 'f74c274a3b1045d7a558e9f4b480d55e', '0c88efdbcd07954d924b7141361c03d4', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lich_su_ho_so`
+--
+
+CREATE TABLE `lich_su_ho_so` (
+  `ls_hs_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sinh_vien_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nguoi_thay_doi` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `truoc_thay_doi` json DEFAULT NULL,
+  `sau_thay_doi` json DEFAULT NULL,
+  `thoi_diem` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE ds_lhp (
-    ds_lhp_id VARCHAR(32) PRIMARY KEY,
-    lhp_id VARCHAR(32) NOT NULL,
-    sinh_vien_id VARCHAR(32) NOT NULL,
-    diem_cc DECIMAL(4,1),
-    diem_gk DECIMAL(4,1),
-    diem_ck DECIMAL(4,1),
-    diem_tong DECIMAL(4,1),
-    trang_thai_diem ENUM('CHUA_NHAP','NHAP_NHAP','CHO_DUYET','DA_DUYET') DEFAULT 'CHUA_NHAP',
-    UNIQUE KEY uk_lhp_sv (lhp_id, sinh_vien_id),
-    FOREIGN KEY (lhp_id) REFERENCES lop_hoc_phan(lhp_id),
-    FOREIGN KEY (sinh_vien_id) REFERENCES sinh_vien(sinh_vien_id)
+--
+-- Dumping data for table `lich_su_ho_so`
+--
+
+INSERT INTO `lich_su_ho_so` (`ls_hs_id`, `sinh_vien_id`, `nguoi_thay_doi`, `truoc_thay_doi`, `sau_thay_doi`, `thoi_diem`) VALUES
+('0070e95048154773825166cd54ca9196', 'b2f1842712744ad3b5682514c82ccd82', '24000000000000000000000000000002', '{\"ho_ten\": \"Anh Loc\", \"lop_id\": \"23000000000000000000000000000001\", \"gioi_tinh\": \"Nam\", \"ngay_sinh\": \"2005-08-28\", \"trang_thai\": \"DANG_HOC\"}', '{\"ly_do\": \"Qua dep trai\", \"ho_ten\": \"Anh Loc\", \"lop_id\": \"23000000000000000000000000000004\", \"gioi_tinh\": \"Nam\", \"ngay_sinh\": \"2005-08-28\", \"trang_thai\": \"DANG_HOC\"}', '2026-05-07 22:47:48'),
+('07f979e7d44041b6bcb67b5e1480f018', '31000000000000000000000000000001', '24000000000000000000000000000002', '{\"ho_ten\": \"Minh Thư\", \"lop_id\": \"23000000000000000000000000000004\", \"gioi_tinh\": \"Khac\", \"ngay_sinh\": \"2026-05-15\", \"trang_thai\": \"BUOC_THOI_HOC\"}', '{\"ly_do\": \"\", \"ho_ten\": \"Minh Thư\", \"lop_id\": \"23000000000000000000000000000004\", \"gioi_tinh\": \"Khac\", \"ngay_sinh\": \"2026-05-15\", \"trang_thai\": \"DANG_HOC\"}', '2026-05-08 01:05:07'),
+('724ef2b732404cef836f2744ec21e052', '31000000000000000000000000000001', '24000000000000000000000000000002', '{\"ho_ten\": \"Minh Thư\", \"lop_id\": \"23000000000000000000000000000004\", \"gioi_tinh\": \"Khac\", \"ngay_sinh\": \"2026-05-15\", \"trang_thai\": \"DANG_HOC\"}', '{\"ly_do\": \"\", \"ho_ten\": \"Minh Thư\", \"lop_id\": \"23000000000000000000000000000004\", \"gioi_tinh\": \"Khac\", \"ngay_sinh\": \"2026-05-15\", \"trang_thai\": \"BUOC_THOI_HOC\"}', '2026-05-08 01:20:55'),
+('99945aa8f40e4e4e901ae0722f2a6c60', '31000000000000000000000000000001', '24000000000000000000000000000002', '{\"ho_ten\": \"Minh Thư\", \"lop_id\": \"23000000000000000000000000000004\", \"gioi_tinh\": \"Khac\", \"ngay_sinh\": \"2026-05-15\", \"trang_thai\": \"DANG_HOC\"}', '{\"ly_do\": \"\", \"ho_ten\": \"Minh Thư\", \"lop_id\": \"23000000000000000000000000000004\", \"gioi_tinh\": \"Khac\", \"ngay_sinh\": \"2026-05-15\", \"trang_thai\": \"BAO_LUU\"}', '2026-05-08 01:39:49'),
+('bad1ac4107074bd8b55410396892d59d', '31000000000000000000000000000001', '24000000000000000000000000000002', '{\"ho_ten\": \"Minh Thư\", \"lop_id\": \"23000000000000000000000000000004\", \"gioi_tinh\": \"Khac\", \"ngay_sinh\": \"2026-05-15\", \"trang_thai\": \"BUOC_THOI_HOC\"}', '{\"ly_do\": \"\", \"ho_ten\": \"Minh Thư\", \"lop_id\": \"23000000000000000000000000000004\", \"gioi_tinh\": \"Khac\", \"ngay_sinh\": \"2026-05-15\", \"trang_thai\": \"DANG_HOC\"}', '2026-05-08 01:39:43'),
+('d7b0ca21d64644dea666a8ff7acfb797', '31000000000000000000000000000001', '24000000000000000000000000000002', '{\"ho_ten\": \"Sinh vien 725101001\", \"lop_id\": \"23000000000000000000000000000001\", \"gioi_tinh\": \"Nam\", \"ngay_sinh\": \"2002-02-02\", \"trang_thai\": \"DANG_HOC\"}', '{\"ly_do\": \"Thư\", \"ho_ten\": \"Minh Thư\", \"lop_id\": \"23000000000000000000000000000004\", \"gioi_tinh\": \"Khac\", \"ngay_sinh\": \"2026-05-15\", \"trang_thai\": \"BUOC_THOI_HOC\"}', '2026-05-07 22:47:08');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lop_hoc_phan`
+--
+
+CREATE TABLE `lop_hoc_phan` (
+  `lhp_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ma_lhp` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mon_hoc_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `hoc_ky_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `giang_vien_id` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ty_le_cc` decimal(5,2) NOT NULL,
+  `ty_le_gk` decimal(5,2) NOT NULL,
+  `ty_le_ck` decimal(5,2) NOT NULL,
+  `trang_thai` enum('MO','DANG_NHAP','CHO_DUYET','DA_DUYET','DONG') COLLATE utf8mb4_unicode_ci DEFAULT 'MO',
+  `cong_nhap_diem_mo` tinyint(1) DEFAULT '0'
+) ;
+
+--
+-- Dumping data for table `lop_hoc_phan`
+--
+
+INSERT INTO `lop_hoc_phan` (`lhp_id`, `ma_lhp`, `mon_hoc_id`, `hoc_ky_id`, `giang_vien_id`, `ty_le_cc`, `ty_le_gk`, `ty_le_ck`, `trang_thai`, `cong_nhap_diem_mo`) VALUES
+('27000000000000000000000000000001', 'CNTT101-HK2-2024', '26000000000000000000000000000001', '22000000000000000000000000000002', '25000000000000000000000000000010', '10.00', '30.00', '60.00', 'DA_DUYET', 0),
+('27000000000000000000000000000002', 'CNTT102-HK2-2024', '26000000000000000000000000000002', '22000000000000000000000000000002', '25000000000000000000000000000002', '10.00', '40.00', '50.00', 'CHO_DUYET', 0),
+('27000000000000000000000000000003', 'CNTT201-HK2-2024', '26000000000000000000000000000003', '22000000000000000000000000000002', '25000000000000000000000000000003', '20.00', '30.00', '50.00', 'DANG_NHAP', 1),
+('27000000000000000000000000000004', 'CNTT202-HK2-2024', '26000000000000000000000000000004', '22000000000000000000000000000002', '25000000000000000000000000000004', '10.00', '30.00', '60.00', 'MO', 0),
+('4fb011d7f34c4d5ebe5c994afd274c8a', 'LTCB', '26000000000000000000000000000001', '22000000000000000000000000000003', '25000000000000000000000000000007', '10.00', '30.00', '60.00', 'MO', 0),
+('b988b5e3a085473baafa0d66b004cedc', 'CNTT606-Hocky2-2028', '27d7d39676933a4bbaad4e89533d3db1', '667de0dd0ad76097a50426ad9c2d5e62', '25000000000000000000000000000001', '10.00', '30.00', '60.00', 'DA_DUYET', 0),
+('c967bf104a2f43ff96d223bea6e5b65f', 'CNTT606-Hocky1-2028', '27d7d39676933a4bbaad4e89533d3db1', 'f02ad90fe64dbb530a2bff683995ebbc', '25000000000000000000000000000002', '10.00', '30.00', '60.00', 'DA_DUYET', 0),
+('f74c274a3b1045d7a558e9f4b480d55e', 'GDTC001-Hockyhe-2027', '26000000000000000000000000000005', '0c88efdbcd07954d924b7141361c03d4', '25000000000000000000000000000001', '10.00', '30.00', '60.00', 'DA_DUYET', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lop_sinh_hoat`
+--
+
+CREATE TABLE `lop_sinh_hoat` (
+  `lop_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ma_lop` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ten_lop` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nien_khoa_id` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `khoa_id` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE lich_su_hoc_mon (
-    ls_id VARCHAR(32) PRIMARY KEY,
-    sinh_vien_id VARCHAR(32) NOT NULL,
-    mon_hoc_id VARCHAR(32) NOT NULL,
-    lhp_id VARCHAR(32) NOT NULL,
-    hoc_ky_id VARCHAR(32) NOT NULL,
-    lan_hoc INT DEFAULT 1,
-    FOREIGN KEY (sinh_vien_id) REFERENCES sinh_vien(sinh_vien_id),
-    FOREIGN KEY (mon_hoc_id) REFERENCES mon_hoc(mon_hoc_id),
-    FOREIGN KEY (lhp_id) REFERENCES lop_hoc_phan(lhp_id),
-    FOREIGN KEY (hoc_ky_id) REFERENCES hoc_ky(hoc_ky_id)
+--
+-- Dumping data for table `lop_sinh_hoat`
+--
+
+INSERT INTO `lop_sinh_hoat` (`lop_id`, `ma_lop`, `ten_lop`, `nien_khoa_id`, `khoa_id`) VALUES
+('23000000000000000000000000000001', 'CNTT-K2', 'Lop CNTT K2', '21000000000000000000000000000001', '20000000000000000000000000000001'),
+('23000000000000000000000000000002', 'CNTT-K3', 'Lop CNTT K3', '21000000000000000000000000000002', '20000000000000000000000000000001'),
+('23000000000000000000000000000003', 'CNTT-K4', 'Lop CNTT K4', '21000000000000000000000000000003', '20000000000000000000000000000001'),
+('23000000000000000000000000000004', 'CNTT-K5', 'Lop CNTT K5', '21000000000000000000000000000004', '20000000000000000000000000000001');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `mon_hoc`
+--
+
+CREATE TABLE `mon_hoc` (
+  `mon_hoc_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ma_mon` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ten_mon` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `so_tin_chi` int NOT NULL,
+  `tinh_gpa` tinyint(1) DEFAULT '1'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE audit_diem (
-    audit_id VARCHAR(32) PRIMARY KEY,
-    ds_lhp_id VARCHAR(32) NOT NULL,
-    tai_khoan_id VARCHAR(32) NOT NULL,
-    truoc_thay_doi JSON,
-    sau_thay_doi JSON,
-    ly_do TEXT,
-    thoi_diem DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (ds_lhp_id) REFERENCES ds_lhp(ds_lhp_id),
-    FOREIGN KEY (tai_khoan_id) REFERENCES tai_khoan(tai_khoan_id)
+--
+-- Dumping data for table `mon_hoc`
+--
+
+INSERT INTO `mon_hoc` (`mon_hoc_id`, `ma_mon`, `ten_mon`, `so_tin_chi`, `tinh_gpa`) VALUES
+('26000000000000000000000000000001', 'CNTT101', 'Lap trinh co ban', 3, 1),
+('26000000000000000000000000000002', 'CNTT102', 'Co so du lieu', 3, 1),
+('26000000000000000000000000000003', 'CNTT201', 'Lap trinh huong doi tuong', 3, 1),
+('26000000000000000000000000000004', 'CNTT202', 'Mang may tinh', 3, 1),
+('26000000000000000000000000000005', 'GDTC001', 'Giao duc the chat', 2, 0),
+('26000000000000000000000000000006', 'CNTT301', 'Ky thuat phan mem', 3, 1),
+('27d7d39676933a4bbaad4e89533d3db1', 'CNTT606', 'Loc', 4, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `nien_khoa`
+--
+
+CREATE TABLE `nien_khoa` (
+  `nien_khoa_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ten_nien_khoa` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nam_bat_dau` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE yeu_cau_sua_diem (
-    yc_id VARCHAR(32) PRIMARY KEY,
-    ds_lhp_id VARCHAR(32) NOT NULL,
-    giang_vien_id VARCHAR(32) NOT NULL,
-    ly_do TEXT NOT NULL,
-    trang_thai ENUM('CHO_XU_LY','CHAP_THUAN','TU_CHOI') DEFAULT 'CHO_XU_LY',
-    giao_vu_xu_ly VARCHAR(32),
-    ghi_chu_giao_vu TEXT,
-    ngay_tao DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (ds_lhp_id) REFERENCES ds_lhp(ds_lhp_id),
-    FOREIGN KEY (giang_vien_id) REFERENCES giang_vien(giang_vien_id),
-    FOREIGN KEY (giao_vu_xu_ly) REFERENCES giao_vu(giao_vu_id)
+--
+-- Dumping data for table `nien_khoa`
+--
+
+INSERT INTO `nien_khoa` (`nien_khoa_id`, `ten_nien_khoa`, `nam_bat_dau`) VALUES
+('21000000000000000000000000000001', '2021-2025', 2021),
+('21000000000000000000000000000002', '2022-2026', 2022),
+('21000000000000000000000000000003', '2023-2027', 2023),
+('21000000000000000000000000000004', '2024-2028', 2024),
+('45b2f76e88a08fcb256e971628a8614a', '2026-2027', 2026),
+('e139c979be640543d19d88c9004e819e', '2026-2027', 2026);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sinh_vien`
+--
+
+CREATE TABLE `sinh_vien` (
+  `sinh_vien_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `tai_khoan_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `msv` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ho_ten` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ngay_sinh` date DEFAULT NULL,
+  `gioi_tinh` enum('Nam','Nu','Khac') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `lop_id` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `trang_thai` enum('DANG_HOC','BAO_LUU','TOT_NGHIEP','BUOC_THOI_HOC') COLLATE utf8mb4_unicode_ci DEFAULT 'DANG_HOC'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE ket_qua_hoc_ky (
-    kqhk_id VARCHAR(32) PRIMARY KEY,
-    sinh_vien_id VARCHAR(32) NOT NULL,
-    hoc_ky_id VARCHAR(32) NOT NULL,
-    gpa_hk_he10 DECIMAL(4,2),
-    gpa_hk_he4 DECIMAL(4,2),
-    gpa_tich_luy_he10 DECIMAL(4,2),
-    gpa_tich_luy_he4 DECIMAL(4,2),
-    tong_tin_chi_dat INT DEFAULT 0,
-    xep_loai VARCHAR(20),
-    muc_canh_bao INT DEFAULT 0,
-    UNIQUE KEY uk_sv_hk (sinh_vien_id, hoc_ky_id),
-    FOREIGN KEY (sinh_vien_id) REFERENCES sinh_vien(sinh_vien_id),
-    FOREIGN KEY (hoc_ky_id) REFERENCES hoc_ky(hoc_ky_id)
+--
+-- Dumping data for table `sinh_vien`
+--
+
+INSERT INTO `sinh_vien` (`sinh_vien_id`, `tai_khoan_id`, `msv`, `ho_ten`, `ngay_sinh`, `gioi_tinh`, `lop_id`, `trang_thai`) VALUES
+('31000000000000000000000000000001', '30000000000000000000000000000001', '725101001', 'Minh Thư', '2026-05-15', 'Khac', '23000000000000000000000000000004', 'BAO_LUU'),
+('31000000000000000000000000000002', '30000000000000000000000000000002', '725101002', 'Sinh vien 725101002', '2003-03-03', 'Nu', '23000000000000000000000000000001', 'DANG_HOC'),
+('31000000000000000000000000000003', '30000000000000000000000000000003', '725101003', 'Sinh vien 725101003', '2004-04-04', 'Nam', '23000000000000000000000000000001', 'DANG_HOC'),
+('31000000000000000000000000000004', '30000000000000000000000000000004', '725101004', 'Sinh vien 725101004', '2005-05-05', 'Nu', '23000000000000000000000000000001', 'DANG_HOC'),
+('31000000000000000000000000000005', '30000000000000000000000000000005', '725101005', 'Sinh vien 725101005', '2001-06-06', 'Nam', '23000000000000000000000000000001', 'DANG_HOC'),
+('31000000000000000000000000000006', '30000000000000000000000000000006', '725101006', 'Sinh vien 725101006', '2002-07-07', 'Nu', '23000000000000000000000000000001', 'DANG_HOC'),
+('31000000000000000000000000000007', '30000000000000000000000000000007', '725101007', 'Sinh vien 725101007', '2003-08-08', 'Nam', '23000000000000000000000000000001', 'DANG_HOC'),
+('31000000000000000000000000000008', '30000000000000000000000000000008', '725101008', 'Sinh vien 725101008', '2004-09-09', 'Nu', '23000000000000000000000000000001', 'DANG_HOC'),
+('31000000000000000000000000000009', '30000000000000000000000000000009', '735101001', 'Sinh vien 735101001', '2005-10-10', 'Nam', '23000000000000000000000000000002', 'DANG_HOC'),
+('31000000000000000000000000000010', '30000000000000000000000000000010', '735101002', 'Sinh vien 735101002', '2001-11-11', 'Nu', '23000000000000000000000000000002', 'DANG_HOC'),
+('31000000000000000000000000000011', '30000000000000000000000000000011', '735101003', 'Sinh vien 735101003', '2002-12-12', 'Nam', '23000000000000000000000000000002', 'DANG_HOC'),
+('31000000000000000000000000000012', '30000000000000000000000000000012', '735101004', 'Sinh vien 735101004', '2003-01-13', 'Nu', '23000000000000000000000000000002', 'DANG_HOC'),
+('31000000000000000000000000000013', '30000000000000000000000000000013', '735101005', 'Sinh vien 735101005', '2004-02-14', 'Nam', '23000000000000000000000000000002', 'DANG_HOC'),
+('31000000000000000000000000000014', '30000000000000000000000000000014', '735101006', 'Sinh vien 735101006', '2005-03-15', 'Nu', '23000000000000000000000000000002', 'DANG_HOC'),
+('31000000000000000000000000000015', '30000000000000000000000000000015', '735101007', 'Sinh vien 735101007', '2001-04-16', 'Nam', '23000000000000000000000000000002', 'DANG_HOC'),
+('31000000000000000000000000000016', '30000000000000000000000000000016', '735101008', 'Sinh vien 735101008', '2002-05-17', 'Nu', '23000000000000000000000000000002', 'DANG_HOC'),
+('31000000000000000000000000000017', '30000000000000000000000000000017', '745101001', 'Sinh vien 745101001', '2003-06-18', 'Nam', '23000000000000000000000000000003', 'DANG_HOC'),
+('31000000000000000000000000000018', '30000000000000000000000000000018', '745101002', 'Sinh vien 745101002', '2004-07-19', 'Nu', '23000000000000000000000000000003', 'DANG_HOC'),
+('31000000000000000000000000000019', '30000000000000000000000000000019', '745101003', 'Sinh vien 745101003', '2005-08-20', 'Nam', '23000000000000000000000000000003', 'DANG_HOC'),
+('31000000000000000000000000000020', '30000000000000000000000000000020', '745101004', 'Sinh vien 745101004', '2001-09-21', 'Nu', '23000000000000000000000000000003', 'DANG_HOC'),
+('31000000000000000000000000000021', '30000000000000000000000000000021', '745101005', 'Sinh vien 745101005', '2002-10-22', 'Nam', '23000000000000000000000000000003', 'DANG_HOC'),
+('31000000000000000000000000000022', '30000000000000000000000000000022', '745101006', 'Sinh vien 745101006', '2003-11-23', 'Nu', '23000000000000000000000000000003', 'DANG_HOC'),
+('31000000000000000000000000000023', '30000000000000000000000000000023', '745101007', 'Sinh vien 745101007', '2004-12-24', 'Nam', '23000000000000000000000000000003', 'DANG_HOC'),
+('31000000000000000000000000000024', '30000000000000000000000000000024', '755101001', 'Sinh vien 755101001', '2005-01-25', 'Nu', '23000000000000000000000000000004', 'DANG_HOC'),
+('31000000000000000000000000000025', '30000000000000000000000000000025', '755101002', 'Sinh vien 755101002', '2001-02-26', 'Nam', '23000000000000000000000000000004', 'DANG_HOC'),
+('31000000000000000000000000000026', '30000000000000000000000000000026', '755101003', 'Sinh vien 755101003', '2002-03-27', 'Nu', '23000000000000000000000000000004', 'DANG_HOC'),
+('31000000000000000000000000000027', '30000000000000000000000000000027', '755101004', 'Sinh vien 755101004', '2003-04-01', 'Nam', '23000000000000000000000000000004', 'DANG_HOC'),
+('31000000000000000000000000000028', '30000000000000000000000000000028', '755101005', 'Sinh vien 755101005', '2004-05-02', 'Nu', '23000000000000000000000000000004', 'DANG_HOC'),
+('31000000000000000000000000000029', '30000000000000000000000000000029', '755101006', 'Sinh vien 755101006', '2005-06-03', 'Nam', '23000000000000000000000000000004', 'DANG_HOC'),
+('31000000000000000000000000000030', '30000000000000000000000000000030', '755101007', 'Sinh vien 755101007', '2001-07-04', 'Nu', '23000000000000000000000000000004', 'DANG_HOC'),
+('b2f1842712744ad3b5682514c82ccd82', '48d9312dd78b4e58ab089b6918138495', '735105060', 'Anh Loc', '2005-08-28', 'Nam', '23000000000000000000000000000004', 'DANG_HOC');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tai_khoan`
+--
+
+CREATE TABLE `tai_khoan` (
+  `tai_khoan_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mat_khau_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `vai_tro` enum('ADMIN','GIAO_VU','GIANG_VIEN','SINH_VIEN') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `ngay_tao` datetime DEFAULT CURRENT_TIMESTAMP,
+  `lan_dang_nhap_cuoi` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE lich_su_ho_so (
-    ls_hs_id VARCHAR(32) PRIMARY KEY,
-    sinh_vien_id VARCHAR(32) NOT NULL,
-    nguoi_thay_doi VARCHAR(32) NOT NULL,
-    truoc_thay_doi JSON,
-    sau_thay_doi JSON,
-    thoi_diem DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (sinh_vien_id) REFERENCES sinh_vien(sinh_vien_id)
+--
+-- Dumping data for table `tai_khoan`
+--
+
+INSERT INTO `tai_khoan` (`tai_khoan_id`, `email`, `mat_khau_hash`, `vai_tro`, `is_active`, `ngay_tao`, `lan_dang_nhap_cuoi`) VALUES
+('24000000000000000000000000000001', 'admin1@qlsv.edu.vn', '$2y$10$qX7cP3JJGKRFVFoC90lME.Rn.vuxra/AjmepfQM0phsITYWWWrWw6', 'ADMIN', 1, '2026-05-07 21:06:30', '2026-05-07 23:08:50'),
+('24000000000000000000000000000002', 'giaovu1@qlsv.edu.vn', '$2y$10$F8wEPPxQey1yQKoGidnNleTxLPGzV5sYRAPsQy5vt8r3koVzL7.OG', 'GIAO_VU', 1, '2026-05-07 21:06:30', '2026-05-08 01:04:48'),
+('24000000000000000000000000000003', 'giaovu2@qlsv.edu.vn', '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b', 'GIAO_VU', 1, '2026-05-07 21:06:30', NULL),
+('24000000000000000000000000000004', 'admin2@qlsv.edu.vn', '$2y$10$97XNpivU4.8Y6YUwcT5GXeyixhW0j9ZdxSbPL3TlERr41TjPYGr6q', 'ADMIN', 1, '2026-05-07 21:06:30', '2026-05-07 21:17:19'),
+('24000000000000000000000000000005', 'giaovu3@qlsv.edu.vn', '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b', 'GIAO_VU', 1, '2026-05-07 21:06:30', NULL),
+('24000000000000000000000000000011', 'gv01@qlsv.edu.vn', '$2y$10$sGD9jetq4hCEQGKCrKIT5.aLGYNyZt7mQ026AOauM9WX67wEuYSni', 'GIANG_VIEN', 1, '2026-05-07 21:06:30', '2026-05-08 01:42:25'),
+('24000000000000000000000000000012', 'gv02@qlsv.edu.vn', '$2y$10$W5H3FeHtFWnmy.KPu0sYWulUcT/0/qtwvsMFKZyU2/wzg5A4G04Yy', 'GIANG_VIEN', 1, '2026-05-07 21:06:30', '2026-05-08 01:25:40'),
+('24000000000000000000000000000013', 'gv03@qlsv.edu.vn', '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b', 'GIANG_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('24000000000000000000000000000014', 'gv04@qlsv.edu.vn', '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b', 'GIANG_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('24000000000000000000000000000015', 'gv05@qlsv.edu.vn', '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b', 'GIANG_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('24000000000000000000000000000016', 'gv06@qlsv.edu.vn', '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b', 'GIANG_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('24000000000000000000000000000017', 'gv07@qlsv.edu.vn', '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b', 'GIANG_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('24000000000000000000000000000018', 'gv08@qlsv.edu.vn', '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b', 'GIANG_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('24000000000000000000000000000019', 'gv09@qlsv.edu.vn', '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b', 'GIANG_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('24000000000000000000000000000020', 'gv10@qlsv.edu.vn', '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b', 'GIANG_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000001', '725101001', '$2y$10$dSnEz44Zhq0jTRmIawbwLuzzxmAv4zkTtzblbFXyx0SR99DfKleQm', 'SINH_VIEN', 1, '2026-05-07 21:06:30', '2026-05-08 01:06:16'),
+('30000000000000000000000000000002', '725101002', 'd9af9ffe7babc105a61aca234d99cd50b419d6902c7f6400d45f42c216f9bf35', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000003', '725101003', '57b52ba68a6be287b3a956cdceb8171a1b965c858db01de1838e425c1df89ad0', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000004', '725101004', '66d3aa09967d0922fd3bc82cc8649c0851148229b3a20a8fad808cce292674f1', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000005', '725101005', '384e915614b9cc0b3f53de329fa329a0d2671ad1cd4c934ab2872b6838ade6d8', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000006', '725101006', '86f2eb3e336f0ecfab83fa3cbc29aa30156b038ee9ff6c665ea65c9cfdfeb002', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000007', '725101007', '2f92b8684ec8de476c4ed81b5fd4ccc84ba37783f4154339a8d2d39d1c621666', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000008', '725101008', 'cfb7946ae691fdbc14696535ea213c2d9c82db35bd90c20b8f74682423a546a7', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000009', '735101001', 'dce5effce8d4136ea95016435f18dd114726a617ab604221cbc7722be9d62818', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000010', '735101002', '93a855fdb4ddeafcd4d24f35f3d0977ad92410952162a2c63faa9a97da8ffec7', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000011', '735101003', '84e4cc9a2750065fd6ed259055844c60f1da51e5283a30f4ca5a8c2fd7c7d2a7', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000012', '735101004', 'a64310133db6e23a0841ba8428b2040b445cc64cf26b09f45cf9d42ee9269774', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000013', '735101005', '94e92555ba5cc39848a02167cbb866cf7f6342ba5f57bad6d29a0a051cb94bcf', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000014', '735101006', '2776eb414e011b66d195b32f038504b4e0a162bf5a144d7c38340fbc0f1e3413', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000015', '735101007', '05c785ec0d3226e0328aeddb797216fb09e7d6b71d54a2ae45d34871d809dbef', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000016', '735101008', '1e3a8aa85d82462b0ce2a43df288cd86d3db0df74d2ca80976218f13f8234248', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000017', '745101001', '228d9a0cea0ba9f90242d72d116a84ef2d61cbcbb5a18328a6a13a92ae184092', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000018', '745101002', 'cd15833af7357a2c56a2b747ac2000e1214e50b8bfd54573845df99643a19108', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000019', '745101003', '9f652d0b1ff8aa9f365620d4b4cec9e2af54b72b9156b5b52bc062487b94d816', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000020', '745101004', '12b63bbbb89aabf914baa0bdd500322138eee749a31883d8ac3315545db6b623', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000021', '745101005', 'ab0cb8da6881f38ae4cb3d475a7299bd1da1cbc7476b6325dec3961dd295ea6b', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000022', '745101006', '7e6c8ac5c8be77ce3d0de2da035c2b577b0b58d0d942f59bf70b3f9b093e6a27', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000023', '745101007', '1e8ac0b210e568131b5acb1023d8a81433c5b8edda7145b807e6c2e965143a9e', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000024', '755101001', 'c1d868d079662e66a8b0dcd0f3537b9c8eb5829f0bb74e7676305074a810e0b0', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000025', '755101002', '885fe1561832d759a4085c2c2c6556fe76fb546eb902f388f549f7135eae734e', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000026', '755101003', 'a4520b8b3de2757d5bf7e7dac8d17fe1e58a93c5ca34054a7c39bd25ea85680e', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000027', '755101004', '5be2865278e91da7520e9cb284c4b61ffae52b12468ac65a9717649cf26cf5ae', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000028', '755101005', '8d512234b9c28c99aae6dd87090b623ea79e22a9ae185756033d3241bbd1dd31', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000029', '755101006', 'c93245d4203650bb6ce26a779c606cba59d7ee9c8bd0fdb19d9280e24c4e491b', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('30000000000000000000000000000030', '755101007', '156e40b0b2c83e74d55fad35cfd57493f049dee1907878d43aa91f306bf2f318', 'SINH_VIEN', 1, '2026-05-07 21:06:30', NULL),
+('48d9312dd78b4e58ab089b6918138495', '735105060', '$2y$10$kjTGVoWhbv5sDLqR9IPJCO6ugPIS2C61SSHuDRP3nkqW2I4zvC.de', 'SINH_VIEN', 0, '2026-05-07 21:20:39', '2026-05-07 21:21:05');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `yeu_cau_sua_diem`
+--
+
+CREATE TABLE `yeu_cau_sua_diem` (
+  `yc_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ds_lhp_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `giang_vien_id` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ly_do` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `trang_thai` enum('CHO_XU_LY','CHAP_THUAN','TU_CHOI') COLLATE utf8mb4_unicode_ci DEFAULT 'CHO_XU_LY',
+  `giao_vu_xu_ly` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ghi_chu_giao_vu` text COLLATE utf8mb4_unicode_ci,
+  `ngay_tao` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE admin_log (
-    log_id VARCHAR(32) PRIMARY KEY,
-    tai_khoan_id VARCHAR(32) NOT NULL,
-    hanh_dong VARCHAR(100) NOT NULL,
-    doi_tuong_loai VARCHAR(50),
-    doi_tuong_id VARCHAR(32),
-    du_lieu JSON,
-    thoi_diem DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (tai_khoan_id) REFERENCES tai_khoan(tai_khoan_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+--
+-- Dumping data for table `yeu_cau_sua_diem`
+--
 
-CREATE INDEX idx_sv_msv ON sinh_vien(msv);
-CREATE INDEX idx_lhp_hoc_ky ON lop_hoc_phan(hoc_ky_id);
-CREATE INDEX idx_lhp_giang_vien ON lop_hoc_phan(giang_vien_id);
-CREATE INDEX idx_kqhk_sv ON ket_qua_hoc_ky(sinh_vien_id);
-CREATE INDEX idx_kqhk_hk ON ket_qua_hoc_ky(hoc_ky_id);
-CREATE INDEX idx_yc_trang_thai ON yeu_cau_sua_diem(trang_thai);
-CREATE INDEX idx_audit_diem_ds_lhp ON audit_diem(ds_lhp_id);
+INSERT INTO `yeu_cau_sua_diem` (`yc_id`, `ds_lhp_id`, `giang_vien_id`, `ly_do`, `trang_thai`, `giao_vu_xu_ly`, `ghi_chu_giao_vu`, `ngay_tao`) VALUES
+('fe7bf66f97f543a1bfce1f5de156c46d', '32000000000000000000000000000001', '25000000000000000000000000000001', 'Smoke yeu cau sua', 'CHAP_THUAN', '25500000000000000000000000000001', 'Smoke approve', '2026-05-07 21:09:57'),
+('fee7c4ff8c2e407eb40c162743aae627', '32000000000000000000000000000001', '25000000000000000000000000000001', 'Smoke yeu cau sua', 'CHAP_THUAN', '25500000000000000000000000000001', 'Smoke approve', '2026-05-07 21:06:59');
 
--- Note for implementation:
--- For student accounts, set tai_khoan.email = msv and login identifier = msv.
--- This matches the requirement: "Tk cua sv se la ma sinh vien luon".
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `admin_log`
+--
+ALTER TABLE `admin_log`
+  ADD PRIMARY KEY (`log_id`),
+  ADD KEY `tai_khoan_id` (`tai_khoan_id`);
+
+--
+-- Indexes for table `audit_diem`
+--
+ALTER TABLE `audit_diem`
+  ADD PRIMARY KEY (`audit_id`),
+  ADD KEY `tai_khoan_id` (`tai_khoan_id`),
+  ADD KEY `idx_audit_diem_ds_lhp` (`ds_lhp_id`);
+
+--
+-- Indexes for table `ds_lhp`
+--
+ALTER TABLE `ds_lhp`
+  ADD PRIMARY KEY (`ds_lhp_id`),
+  ADD UNIQUE KEY `uk_lhp_sv` (`lhp_id`,`sinh_vien_id`),
+  ADD KEY `sinh_vien_id` (`sinh_vien_id`);
+
+--
+-- Indexes for table `giang_vien`
+--
+ALTER TABLE `giang_vien`
+  ADD PRIMARY KEY (`giang_vien_id`),
+  ADD UNIQUE KEY `tai_khoan_id` (`tai_khoan_id`),
+  ADD UNIQUE KEY `ma_gv` (`ma_gv`),
+  ADD KEY `khoa_id` (`khoa_id`);
+
+--
+-- Indexes for table `giao_vu`
+--
+ALTER TABLE `giao_vu`
+  ADD PRIMARY KEY (`giao_vu_id`),
+  ADD UNIQUE KEY `tai_khoan_id` (`tai_khoan_id`),
+  ADD UNIQUE KEY `ma_giao_vu` (`ma_giao_vu`),
+  ADD KEY `khoa_id` (`khoa_id`);
+
+--
+-- Indexes for table `hoc_ky`
+--
+ALTER TABLE `hoc_ky`
+  ADD PRIMARY KEY (`hoc_ky_id`);
+
+--
+-- Indexes for table `ket_qua_hoc_ky`
+--
+ALTER TABLE `ket_qua_hoc_ky`
+  ADD PRIMARY KEY (`kqhk_id`),
+  ADD UNIQUE KEY `uk_sv_hk` (`sinh_vien_id`,`hoc_ky_id`),
+  ADD KEY `idx_kqhk_sv` (`sinh_vien_id`),
+  ADD KEY `idx_kqhk_hk` (`hoc_ky_id`);
+
+--
+-- Indexes for table `khoa_bo_mon`
+--
+ALTER TABLE `khoa_bo_mon`
+  ADD PRIMARY KEY (`khoa_id`),
+  ADD UNIQUE KEY `ma_khoa` (`ma_khoa`);
+
+--
+-- Indexes for table `lich_su_hoc_mon`
+--
+ALTER TABLE `lich_su_hoc_mon`
+  ADD PRIMARY KEY (`ls_id`),
+  ADD KEY `sinh_vien_id` (`sinh_vien_id`),
+  ADD KEY `mon_hoc_id` (`mon_hoc_id`),
+  ADD KEY `lhp_id` (`lhp_id`),
+  ADD KEY `hoc_ky_id` (`hoc_ky_id`);
+
+--
+-- Indexes for table `lich_su_ho_so`
+--
+ALTER TABLE `lich_su_ho_so`
+  ADD PRIMARY KEY (`ls_hs_id`),
+  ADD KEY `sinh_vien_id` (`sinh_vien_id`);
+
+--
+-- Indexes for table `lop_hoc_phan`
+--
+ALTER TABLE `lop_hoc_phan`
+  ADD PRIMARY KEY (`lhp_id`),
+  ADD UNIQUE KEY `ma_lhp` (`ma_lhp`),
+  ADD KEY `mon_hoc_id` (`mon_hoc_id`),
+  ADD KEY `idx_lhp_hoc_ky` (`hoc_ky_id`),
+  ADD KEY `idx_lhp_giang_vien` (`giang_vien_id`);
+
+--
+-- Indexes for table `lop_sinh_hoat`
+--
+ALTER TABLE `lop_sinh_hoat`
+  ADD PRIMARY KEY (`lop_id`),
+  ADD UNIQUE KEY `ma_lop` (`ma_lop`),
+  ADD KEY `nien_khoa_id` (`nien_khoa_id`),
+  ADD KEY `khoa_id` (`khoa_id`);
+
+--
+-- Indexes for table `mon_hoc`
+--
+ALTER TABLE `mon_hoc`
+  ADD PRIMARY KEY (`mon_hoc_id`),
+  ADD UNIQUE KEY `ma_mon` (`ma_mon`);
+
+--
+-- Indexes for table `nien_khoa`
+--
+ALTER TABLE `nien_khoa`
+  ADD PRIMARY KEY (`nien_khoa_id`);
+
+--
+-- Indexes for table `sinh_vien`
+--
+ALTER TABLE `sinh_vien`
+  ADD PRIMARY KEY (`sinh_vien_id`),
+  ADD UNIQUE KEY `tai_khoan_id` (`tai_khoan_id`),
+  ADD UNIQUE KEY `msv` (`msv`),
+  ADD KEY `lop_id` (`lop_id`),
+  ADD KEY `idx_sv_msv` (`msv`);
+
+--
+-- Indexes for table `tai_khoan`
+--
+ALTER TABLE `tai_khoan`
+  ADD PRIMARY KEY (`tai_khoan_id`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
+-- Indexes for table `yeu_cau_sua_diem`
+--
+ALTER TABLE `yeu_cau_sua_diem`
+  ADD PRIMARY KEY (`yc_id`),
+  ADD KEY `ds_lhp_id` (`ds_lhp_id`),
+  ADD KEY `giang_vien_id` (`giang_vien_id`),
+  ADD KEY `giao_vu_xu_ly` (`giao_vu_xu_ly`),
+  ADD KEY `idx_yc_trang_thai` (`trang_thai`);
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `admin_log`
+--
+ALTER TABLE `admin_log`
+  ADD CONSTRAINT `admin_log_ibfk_1` FOREIGN KEY (`tai_khoan_id`) REFERENCES `tai_khoan` (`tai_khoan_id`);
+
+--
+-- Constraints for table `audit_diem`
+--
+ALTER TABLE `audit_diem`
+  ADD CONSTRAINT `audit_diem_ibfk_1` FOREIGN KEY (`ds_lhp_id`) REFERENCES `ds_lhp` (`ds_lhp_id`),
+  ADD CONSTRAINT `audit_diem_ibfk_2` FOREIGN KEY (`tai_khoan_id`) REFERENCES `tai_khoan` (`tai_khoan_id`);
+
+--
+-- Constraints for table `ds_lhp`
+--
+ALTER TABLE `ds_lhp`
+  ADD CONSTRAINT `ds_lhp_ibfk_1` FOREIGN KEY (`lhp_id`) REFERENCES `lop_hoc_phan` (`lhp_id`),
+  ADD CONSTRAINT `ds_lhp_ibfk_2` FOREIGN KEY (`sinh_vien_id`) REFERENCES `sinh_vien` (`sinh_vien_id`);
+
+--
+-- Constraints for table `giang_vien`
+--
+ALTER TABLE `giang_vien`
+  ADD CONSTRAINT `giang_vien_ibfk_1` FOREIGN KEY (`tai_khoan_id`) REFERENCES `tai_khoan` (`tai_khoan_id`),
+  ADD CONSTRAINT `giang_vien_ibfk_2` FOREIGN KEY (`khoa_id`) REFERENCES `khoa_bo_mon` (`khoa_id`);
+
+--
+-- Constraints for table `giao_vu`
+--
+ALTER TABLE `giao_vu`
+  ADD CONSTRAINT `giao_vu_ibfk_1` FOREIGN KEY (`tai_khoan_id`) REFERENCES `tai_khoan` (`tai_khoan_id`),
+  ADD CONSTRAINT `giao_vu_ibfk_2` FOREIGN KEY (`khoa_id`) REFERENCES `khoa_bo_mon` (`khoa_id`);
+
+--
+-- Constraints for table `ket_qua_hoc_ky`
+--
+ALTER TABLE `ket_qua_hoc_ky`
+  ADD CONSTRAINT `ket_qua_hoc_ky_ibfk_1` FOREIGN KEY (`sinh_vien_id`) REFERENCES `sinh_vien` (`sinh_vien_id`),
+  ADD CONSTRAINT `ket_qua_hoc_ky_ibfk_2` FOREIGN KEY (`hoc_ky_id`) REFERENCES `hoc_ky` (`hoc_ky_id`);
+
+--
+-- Constraints for table `lich_su_hoc_mon`
+--
+ALTER TABLE `lich_su_hoc_mon`
+  ADD CONSTRAINT `lich_su_hoc_mon_ibfk_1` FOREIGN KEY (`sinh_vien_id`) REFERENCES `sinh_vien` (`sinh_vien_id`),
+  ADD CONSTRAINT `lich_su_hoc_mon_ibfk_2` FOREIGN KEY (`mon_hoc_id`) REFERENCES `mon_hoc` (`mon_hoc_id`),
+  ADD CONSTRAINT `lich_su_hoc_mon_ibfk_3` FOREIGN KEY (`lhp_id`) REFERENCES `lop_hoc_phan` (`lhp_id`),
+  ADD CONSTRAINT `lich_su_hoc_mon_ibfk_4` FOREIGN KEY (`hoc_ky_id`) REFERENCES `hoc_ky` (`hoc_ky_id`);
+
+--
+-- Constraints for table `lich_su_ho_so`
+--
+ALTER TABLE `lich_su_ho_so`
+  ADD CONSTRAINT `lich_su_ho_so_ibfk_1` FOREIGN KEY (`sinh_vien_id`) REFERENCES `sinh_vien` (`sinh_vien_id`);
+
+--
+-- Constraints for table `lop_hoc_phan`
+--
+ALTER TABLE `lop_hoc_phan`
+  ADD CONSTRAINT `lop_hoc_phan_ibfk_1` FOREIGN KEY (`mon_hoc_id`) REFERENCES `mon_hoc` (`mon_hoc_id`),
+  ADD CONSTRAINT `lop_hoc_phan_ibfk_2` FOREIGN KEY (`hoc_ky_id`) REFERENCES `hoc_ky` (`hoc_ky_id`),
+  ADD CONSTRAINT `lop_hoc_phan_ibfk_3` FOREIGN KEY (`giang_vien_id`) REFERENCES `giang_vien` (`giang_vien_id`);
+
+--
+-- Constraints for table `lop_sinh_hoat`
+--
+ALTER TABLE `lop_sinh_hoat`
+  ADD CONSTRAINT `lop_sinh_hoat_ibfk_1` FOREIGN KEY (`nien_khoa_id`) REFERENCES `nien_khoa` (`nien_khoa_id`),
+  ADD CONSTRAINT `lop_sinh_hoat_ibfk_2` FOREIGN KEY (`khoa_id`) REFERENCES `khoa_bo_mon` (`khoa_id`);
+
+--
+-- Constraints for table `sinh_vien`
+--
+ALTER TABLE `sinh_vien`
+  ADD CONSTRAINT `sinh_vien_ibfk_1` FOREIGN KEY (`tai_khoan_id`) REFERENCES `tai_khoan` (`tai_khoan_id`),
+  ADD CONSTRAINT `sinh_vien_ibfk_2` FOREIGN KEY (`lop_id`) REFERENCES `lop_sinh_hoat` (`lop_id`);
+
+--
+-- Constraints for table `yeu_cau_sua_diem`
+--
+ALTER TABLE `yeu_cau_sua_diem`
+  ADD CONSTRAINT `yeu_cau_sua_diem_ibfk_1` FOREIGN KEY (`ds_lhp_id`) REFERENCES `ds_lhp` (`ds_lhp_id`),
+  ADD CONSTRAINT `yeu_cau_sua_diem_ibfk_2` FOREIGN KEY (`giang_vien_id`) REFERENCES `giang_vien` (`giang_vien_id`),
+  ADD CONSTRAINT `yeu_cau_sua_diem_ibfk_3` FOREIGN KEY (`giao_vu_xu_ly`) REFERENCES `giao_vu` (`giao_vu_id`);
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
